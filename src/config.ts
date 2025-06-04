@@ -5,5 +5,10 @@ export default registerAs('config', () => {
     database: {
       url: process.env.DATABASE_URL,
     },
+    credentials: {
+      email: process.env.GAME_EMAIL,
+      password: process.env.GAME_PASSWORD,
+      timezone_offset: process.env.TIMEZONE_OFFSET,
+    },
   };
 });
