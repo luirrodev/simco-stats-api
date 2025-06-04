@@ -1,5 +1,6 @@
 import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import axios, { AxiosResponse } from 'axios';
+import { TokenService } from './token.service';
 
 export interface CsrfTokenResponse {
   csrfToken: string;
@@ -20,6 +21,7 @@ const API_AUTH_URL = 'https://www.simcompanies.com/api/v2/auth/email/auth/';
 
 @Injectable()
 export class AuthService {
+  constructor(private readonly tokenService: TokenService) {}
   /**
    * Calls external API to get CSRF token and cookies
    * @returns Promise with the CSRF token and cookies
@@ -99,8 +101,18 @@ export class AuthService {
       );
 
       if (response.status === 200) {
+        const cookie = response.headers['set-cookie'];
+
+        // Guardar la cookie en la base de datos si existe
+        if (cookie && cookie.length > 0) {
+          const cookieString = Array.isArray(cookie)
+            ? cookie.join('; ')
+            : cookie;
+          await this.tokenService.saveToken(cookieString);
+        }
+
         return {
-          cookie: response.headers['set-cookie'],
+          message: 'Authentication successful',
         };
       }
     } catch (error) {
