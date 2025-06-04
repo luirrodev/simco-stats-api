@@ -1,0 +1,39 @@
+version: '3.9'
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: simco-restaurant-stats-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: 12345678
+      POSTGRES_DB: simco_restaurant_stats_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - '5433:5432'
+    networks:
+      - nestjs-network
+  # app:
+  #   image: ghcr.io/luirrodev/nestjs-first-api:latest
+  #   container_name: nestjs-first-api-app
+  #   restart: unless-stopped
+  #   ports:
+  #     - '3000:3000'
+  #   environment:
+  #     DATABASE_URL: ${DATABASE_URL}
+  #     JWT_SECRET: ${JWT_SECRET}
+  #   networks:
+  #     - nestjs-network
+  #   depends_on:
+  #     - postgres
+
+volumes:
+  postgres_data:
+    name: simco-restaurant-stats-data
+
+networks:
+  nestjs-network:
+    name: simco-restaurant-stats-network
+    driver: bridge
