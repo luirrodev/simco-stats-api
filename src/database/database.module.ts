@@ -15,6 +15,8 @@ import config from 'src/config';
           url: configService.database.url,
           synchronize: false,
           autoLoadEntities: true,
+          migrations: ['dist/database/migrations/*{.ts,.js}'],
+          migrationsRun: false,
         };
       },
     }),
