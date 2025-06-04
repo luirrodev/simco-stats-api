@@ -1,6 +1,6 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Post, Body } from '@nestjs/common';
 
-import { AuthService } from '../services/auth.service';
+import { AuthService, AuthCredentials } from '../services/auth.service';
 
 @Controller('auth')
 export class AuthController {
@@ -15,5 +15,15 @@ export class AuthController {
   async getCsrfToken() {
     const csrfToken = await this.authService.getCsrfToken();
     return { csrfToken };
+  }
+
+  /**
+   * Endpoint to authenticate user with SimCompanies API
+   * @param credentials - Body with email, password and timezone_offset
+   * @returns Authentication response headers
+   */
+  @Post('authenticate')
+  async authenticate(@Body() credentials: AuthCredentials) {
+    return await this.authService.authenticate(credentials);
   }
 }

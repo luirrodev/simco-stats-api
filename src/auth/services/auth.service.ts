@@ -21,16 +21,26 @@ const API_AUTH_URL = 'https://www.simcompanies.com/api/v2/auth/email/auth/';
 @Injectable()
 export class AuthService {
   /**
-   * Calls external API to get CSRF token
-   * @returns Promise with the CSRF token
+   * Calls external API to get CSRF token and cookies
+   * @returns Promise with the CSRF token and cookies
    */
-  async getCsrfToken(): Promise<string> {
+  async getCsrfTokenWithCookies() {
     try {
-      const response: AxiosResponse<CsrfTokenResponse> =
-        await axios.get(API_URL);
+      const response: AxiosResponse<CsrfTokenResponse> = await axios.get(
+        API_URL,
+        {
+          withCredentials: true, // Important: to receive cookies
+        },
+      );
 
       if (response.data && response.data.csrfToken) {
-        return response.data.csrfToken;
+        // Extract cookies from response headers
+        const cookies = response.headers['set-cookie'] || [];
+
+        return {
+          csrfToken: response.data.csrfToken,
+          cookies: cookies,
+        };
       }
 
       throw new HttpException(
@@ -52,20 +62,38 @@ export class AuthService {
   }
 
   /**
+   * Calls external API to get CSRF token
+   * @returns Promise with the CSRF token
+   */
+  async getCsrfToken(): Promise<string> {
+    const result = await this.getCsrfTokenWithCookies();
+    return result.csrfToken;
+  }
+
+  /**
    * Calls external API to authenticate user
    * @param credentials - The authentication credentials
    * @returns Promise with the authentication response
    */
-  async authenticate(credentials: AuthCredentials): Promise<AuthResponse> {
+  async authenticate(credentials: AuthCredentials) {
     try {
-      // First get the CSRF token
-      const csrfToken = await this.getCsrfToken();
+      // First get the CSRF token and cookies
+      const { csrfToken, cookies } = await this.getCsrfTokenWithCookies();
 
-      // Prepare headers with CSRF token and referer
+      console.log(`Using CSRF token: ${csrfToken}`);
+      console.log(`Using cookies: ${cookies.join('; ')}`);
+
+      // Prepare headers with CSRF token, referer, and cookies
       const headers = {
-        'x-csrftoken': csrfToken,
+        'X-CSRFToken': csrfToken, // Try with capital letters
+        'x-csrftoken': csrfToken, // Keep lowercase as backup
+        Referer: 'https://www.simcompanies.com/',
         referer: 'https://www.simcompanies.com/',
+        Origin: 'https://www.simcompanies.com',
         'Content-Type': 'application/json',
+        'User-Agent':
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+        Cookie: cookies.join('; '), // Send cookies back
       };
 
       // Make POST request to auth API
@@ -76,16 +104,29 @@ export class AuthService {
           password: credentials.password,
           timezone_offset: credentials.timezone_offset,
         },
-        { headers },
+        {
+          headers,
+          withCredentials: true, // Important: to send cookies
+        },
       );
-
-      // Return all headers as JSON
-      return {
-        headers: response.headers as Record<string, string>,
-      };
+      if (response.status === 200) {
+        return {
+          cookie: response.headers['set-cookie'],
+        };
+      }
     } catch (error) {
       if (error instanceof HttpException) {
         throw error;
+      }
+
+      // Log the full error for debugging
+      if (axios.isAxiosError(error)) {
+        console.error('Axios Error Details:', {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          data: error.response?.data as unknown,
+          headers: error.response?.headers,
+        });
       }
 
       const errorMessage =
