@@ -1,4 +1,4 @@
-import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
+import { Injectable, HttpException, HttpStatus, Inject } from '@nestjs/common';
 import axios, { AxiosResponse } from 'axios';
 import { TokenService } from './token.service';
 import { ConfigType } from '@nestjs/config';
@@ -38,7 +38,8 @@ const COOKIE_RENEWAL_THRESHOLD_DAYS = 5; // Renovar si quedan 5 días o menos
 export class AuthService {
   constructor(
     private readonly tokenService: TokenService,
-    private readonly configService: ConfigType<typeof config>, // Asegúrate de importar ConfigService si lo usas
+    @Inject(config.KEY)
+    private readonly configService: ConfigType<typeof config>,
   ) {}
   /**
    * Calls external API to get CSRF token and cookies

@@ -19,6 +19,9 @@ import { enviroments } from './enviroments';
       load: [config],
       validationSchema: Joi.object({
         DATABASE_URL: Joi.string().required(),
+        GAME_EMAIL: Joi.string().email().required(),
+        GAME_PASSWORD: Joi.string().required(),
+        TIMEZONE_OFFSET: Joi.number().default(0),
       }),
     }),
     AuthModule,
