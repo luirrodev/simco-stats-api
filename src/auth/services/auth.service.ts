@@ -80,9 +80,6 @@ export class AuthService {
       // First get the CSRF token and cookies
       const { csrfToken, cookies } = await this.getCsrfTokenWithCookies();
 
-      console.log(`Using CSRF token: ${csrfToken}`);
-      console.log(`Using cookies: ${cookies.join('; ')}`);
-
       // Prepare headers with CSRF token, referer, and cookies
       const headers = {
         'X-CSRFToken': csrfToken, // Try with capital letters
