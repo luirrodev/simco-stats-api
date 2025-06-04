@@ -4,6 +4,7 @@ import * as Joi from 'joi';
 
 import { AuthModule } from './auth/auth.module';
 import { DatabaseModule } from './database/database.module';
+import { HealthModule } from './health/health.module';
 
 import config from './config';
 import { enviroments } from './enviroments';
@@ -11,9 +12,8 @@ import { enviroments } from './enviroments';
 @Module({
   imports: [
     ConfigModule.forRoot({
-      envFilePath:
-        (enviroments[process.env.NODE_ENV as string] as string) ||
-        ('dev' as string),
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      envFilePath: enviroments[process.env.NODE_ENV || 'dev'],
       isGlobal: true,
       load: [config],
       validationSchema: Joi.object({
@@ -22,6 +22,7 @@ import { enviroments } from './enviroments';
     }),
     AuthModule,
     DatabaseModule,
+    HealthModule,
   ],
   controllers: [],
   providers: [],
