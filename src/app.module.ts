@@ -5,6 +5,7 @@ import * as Joi from 'joi';
 import { AuthModule } from './auth/auth.module';
 import { DatabaseModule } from './database/database.module';
 import { HealthModule } from './health/health.module';
+import { RestaurantStatsModule } from './restaurant-stats/restaurant-stats.module';
 
 import config from './config';
 import { enviroments } from './enviroments';
@@ -23,6 +24,7 @@ import { enviroments } from './enviroments';
     AuthModule,
     DatabaseModule,
     HealthModule,
+    RestaurantStatsModule,
   ],
   controllers: [],
   providers: [],
