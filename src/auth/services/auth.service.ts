@@ -62,15 +62,6 @@ export class AuthService {
   }
 
   /**
-   * Calls external API to get CSRF token
-   * @returns Promise with the CSRF token
-   */
-  async getCsrfToken(): Promise<string> {
-    const result = await this.getCsrfTokenWithCookies();
-    return result.csrfToken;
-  }
-
-  /**
    * Calls external API to authenticate user
    * @param credentials - The authentication credentials
    * @returns Promise with the authentication response
@@ -106,6 +97,7 @@ export class AuthService {
           withCredentials: true, // Important: to send cookies
         },
       );
+
       if (response.status === 200) {
         return {
           cookie: response.headers['set-cookie'],
