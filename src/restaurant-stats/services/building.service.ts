@@ -22,22 +22,9 @@ export class BuildingService {
    * @param data - Datos del edificio a guardar
    * @returns Promise con la entidad guardada
    */
-  async saveBuilding(data: BuildingEntity): Promise<BuildingEntity> {
+  private async saveBuilding(data: BuildingEntity): Promise<BuildingEntity> {
     const building = this.buildingRepository.create(data);
     return await this.buildingRepository.save(building);
-  }
-
-  /**
-   * Guarda múltiples edificios/restaurantes
-   * @param dataArray - Array de datos de edificios a guardar
-   * @returns Promise con array de entidades guardadas
-   */
-  async saveBuildings(dataArray: BuildingEntity[]): Promise<BuildingEntity[]> {
-    const buildings = dataArray.map((data) =>
-      this.buildingRepository.create(data),
-    );
-
-    return await this.buildingRepository.save(buildings);
   }
 
   /**
@@ -53,7 +40,7 @@ export class BuildingService {
    * Obtiene los datos de buildings desde la API externa de SimCompanies
    * @returns Promise con los datos de los edificios
    */
-  async fetchBuildingsFromAPI() {
+  private async fetchBuildingsFromAPI() {
     try {
       const url = 'https://www.simcompanies.com/api/v2/companies/me/buildings/';
 
@@ -108,7 +95,7 @@ export class BuildingService {
    * Sincroniza los edificios obtenidos de la API con la base de datos
    * @returns Promise con los edificios sincronizados
    */
-  public async syncBuildingsFromAPI(): Promise<BuildingEntity[]> {
+  public async syncBuildingsFromAPI() {
     const buildingsFromAPI = await this.fetchBuildingsFromAPI();
 
     // Guardar o actualizar los edificios en la base de datos
@@ -132,6 +119,10 @@ export class BuildingService {
       }
     }
 
-    return savedBuildings;
+    return {
+      success: true,
+      message: 'Edificios sincronizados correctamente',
+      count: savedBuildings.length,
+    };
   }
 }
