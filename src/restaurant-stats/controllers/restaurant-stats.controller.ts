@@ -54,4 +54,14 @@ export class RestaurantStatsController {
       buildingIds,
     );
   }
+
+  /**
+   * Obtiene las estadísticas de un restaurante específico por su ID
+   * @param id - ID del restaurante
+   * @returns Promise con las estadísticas del restaurante
+   */
+  @Get(':id')
+  async getRestaurantStatById(@Param('id', ParseIntPipe) id: number) {
+    return await this.restaurantStatsService.getRestaurantStatById(id);
+  }
 }

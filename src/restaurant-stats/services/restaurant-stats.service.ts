@@ -99,10 +99,13 @@ export class RestaurantStatsService {
    * @param id - ID del restaurant stat
    * @returns Promise con el registro encontrado o null
    */
-  private async getRestaurantStatById(
+  public async getRestaurantStatById(
     id: number,
   ): Promise<RestaurantStatEntity | null> {
-    return await this.restaurantStatRepository.findOne({ where: { id } });
+    return await this.restaurantStatRepository.findOne({
+      where: { id },
+      relations: ['building'],
+    });
   }
 
   /**
