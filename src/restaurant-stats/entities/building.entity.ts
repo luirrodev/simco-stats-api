@@ -33,23 +33,23 @@ export class BuildingEntity {
   @PrimaryColumn()
   id: number;
 
-  @Column({ type: 'char' })
-  kind: string;
-
-  @Column({ type: 'varchar', length: 50 })
-  category: string;
-
   @Column({ type: 'varchar', length: 100 })
   name: string;
 
   @Column({ type: 'int' })
-  cost: number;
-
-  @Column({ type: 'int' })
   size: number;
 
+  @Column({ type: 'char', nullable: true })
+  kind?: string;
+
+  @Column({ type: 'varchar', length: 50, nullable: true })
+  category?: string;
+
+  @Column({ type: 'int', nullable: true })
+  cost?: number;
+
   @UpdateDateColumn()
-  updatedAt: Date;
+  updatedAt?: Date;
 
   // @Column({ type: 'jsonb' })
   // restaurantProperties: RestaurantProperties;

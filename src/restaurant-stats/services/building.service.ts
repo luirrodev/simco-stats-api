@@ -22,34 +22,32 @@ export class BuildingService {
    * @param data - Datos del edificio a guardar
    * @returns Promise con la entidad guardada
    */
-  // async saveBuilding(data: CreateBuildingDto): Promise<BuildingEntity> {
-  //   const building = this.buildingRepository.create(data);
-  //   return await this.buildingRepository.save(building);
-  // }
+  async saveBuilding(data: BuildingEntity): Promise<BuildingEntity> {
+    const building = this.buildingRepository.create(data);
+    return await this.buildingRepository.save(building);
+  }
 
   /**
    * Guarda múltiples edificios/restaurantes
    * @param dataArray - Array de datos de edificios a guardar
    * @returns Promise con array de entidades guardadas
    */
-  // async saveBuildings(
-  //   dataArray: CreateBuildingDto[],
-  // ): Promise<BuildingEntity[]> {
-  //   const buildings = dataArray.map((data) =>
-  //     this.buildingRepository.create(data),
-  //   );
+  async saveBuildings(dataArray: BuildingEntity[]): Promise<BuildingEntity[]> {
+    const buildings = dataArray.map((data) =>
+      this.buildingRepository.create(data),
+    );
 
-  //   return await this.buildingRepository.save(buildings);
-  // }
+    return await this.buildingRepository.save(buildings);
+  }
 
   /**
    * Obtiene un edificio por su ID
    * @param id - ID del edificio
    * @returns Promise con el edificio encontrado o null
    */
-  // async getBuildingById(id: number): Promise<BuildingEntity | null> {
-  //   return await this.buildingRepository.findOne({ where: { id } });
-  // }
+  private async getBuildingById(id: number): Promise<BuildingEntity | null> {
+    return await this.buildingRepository.findOne({ where: { id } });
+  }
 
   /**
    * Obtiene los datos de buildings desde la API externa de SimCompanies
@@ -110,27 +108,30 @@ export class BuildingService {
    * Sincroniza los edificios obtenidos de la API con la base de datos
    * @returns Promise con los edificios sincronizados
    */
-  // async syncBuildingsFromAPI(): Promise<BuildingEntity[]> {
-  //   const buildingsFromAPI = await this.fetchBuildingsFromAPI();
+  public async syncBuildingsFromAPI(): Promise<BuildingEntity[]> {
+    const buildingsFromAPI = await this.fetchBuildingsFromAPI();
 
-  //   // Guardar o actualizar los edificios en la base de datos
-  //   const savedBuildings = [];
+    // Guardar o actualizar los edificios en la base de datos
+    const savedBuildings: BuildingEntity[] = [];
 
-  //   for (const buildingData of buildingsFromAPI) {
-  //     const existingBuilding = await this.getBuildingById(buildingData.id);
+    for (const buildingData of buildingsFromAPI) {
+      const existingBuilding = await this.getBuildingById(buildingData.id);
 
-  //     if (existingBuilding) {
-  //       // Actualizar edificio existente
-  //       await this.buildingRepository.update(buildingData.id, buildingData);
-  //       const updatedBuilding = await this.getBuildingById(buildingData.id);
-  //       savedBuildings.push(updatedBuilding);
-  //     } else {
-  //       // Crear nuevo edificio
-  //       const newBuilding = await this.saveBuilding(buildingData);
-  //       savedBuildings.push(newBuilding);
-  //     }
-  //   }
+      if (existingBuilding) {
+        // Actualizar edificio existente
+        await this.buildingRepository.update(buildingData.id, buildingData);
+        const updatedBuilding = await this.getBuildingById(buildingData.id);
 
-  //   return savedBuildings;
-  // }
+        if (updatedBuilding) {
+          savedBuildings.push(updatedBuilding);
+        }
+      } else {
+        // Crear nuevo edificio
+        const newBuilding = await this.saveBuilding(buildingData);
+        savedBuildings.push(newBuilding);
+      }
+    }
+
+    return savedBuildings;
+  }
 }
