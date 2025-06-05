@@ -3,25 +3,11 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
+import { AxiosError } from 'axios';
 
 import { RestaurantStatEntity } from '../entities/restaurant-stat.entity';
 import { CreateRestaurantStatDto } from '../dto/create-restaurant-stat.dto';
 import { AuthService } from '../../auth/services/auth.service';
-
-// Interface para la respuesta de la API externa
-interface RestaurantRunApiResponse {
-  id: number;
-  datetime: string;
-  rating: number;
-  cogs: number;
-  wages: number;
-  resolved: boolean;
-  menuPrice: number;
-  occupancy?: number;
-  revenue?: number;
-  newRating?: number;
-  review?: string;
-}
 
 @Injectable()
 export class RestaurantStatsService {
@@ -80,15 +66,25 @@ export class RestaurantStatsService {
 
       // Hacer la petición HTTP usando firstValueFrom para convertir Observable a Promise
       const response = await firstValueFrom(
-        this.httpService.get<RestaurantRunApiResponse[]>(url, { headers }),
+        this.httpService.get<CreateRestaurantStatDto[]>(url, { headers }),
       );
 
       return response.data;
-    } catch (error: any) {
-      console.error('Error fetching restaurant runs from API:', error);
-      const errorMessage =
-        error instanceof Error ? error.message : 'Unknown error';
-      throw new Error(`Failed to fetch restaurant runs: ${errorMessage}`);
+    } catch (error: unknown) {
+      // Manejo de errores específico para Axios
+      if (error instanceof AxiosError) {
+        const axiosError = error as AxiosError;
+        throw new Error(
+          `Error fetching restaurant runs: ${axiosError.message} - ${axiosError.response?.status}`,
+        );
+      }
+      // Type guard para Error genérico
+      if (error instanceof Error) {
+        throw new Error(`Failed to fetch restaurant runs: ${error.message}`);
+      }
+
+      // Para cualquier otro tipo de error
+      throw new Error('Failed to fetch restaurant runs: Unknown error');
     }
   }
 }
