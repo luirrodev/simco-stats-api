@@ -62,7 +62,7 @@ export class BuildingEntity {
     () => RestaurantStatEntity,
     (restaurantStat) => restaurantStat.building,
   )
-  restaurantStats: RestaurantStatEntity[];
+  restaurantStats?: RestaurantStatEntity[];
 
   // @Column({ type: 'jsonb' })
   // restaurantProperties: RestaurantProperties;
