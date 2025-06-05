@@ -8,6 +8,13 @@ import { AxiosError } from 'axios';
 import { RestaurantStatEntity } from '../entities/restaurant-stat.entity';
 import { AuthService } from '../../auth/services/auth.service';
 
+interface SyncResult {
+  success: boolean;
+  message: string;
+  count: number;
+  buildingId: number;
+}
+
 @Injectable()
 export class RestaurantStatsService {
   constructor(
@@ -85,5 +92,96 @@ export class RestaurantStatsService {
       // Para cualquier otro tipo de error
       throw new Error('Failed to fetch restaurant runs: Unknown error');
     }
+  }
+
+  /**
+   * Verifica si ya existe un registro de restaurant stat con el mismo ID
+   * @param id - ID del restaurant stat
+   * @returns Promise con el registro encontrado o null
+   */
+  private async getRestaurantStatById(
+    id: number,
+  ): Promise<RestaurantStatEntity | null> {
+    return await this.restaurantStatRepository.findOne({ where: { id } });
+  }
+
+  /**
+   * Sincroniza los restaurant runs de un edificio específico con la base de datos
+   * @param buildingId - ID del edificio del restaurante
+   * @returns Promise con el resultado de la sincronización
+   */
+  public async syncRestaurantRunsFromAPI(buildingId: number) {
+    try {
+      // Obtener datos de la API
+      const restaurantRunsFromAPI =
+        await this.fetchRestaurantRunsFromAPI(buildingId);
+
+      // Guardar o actualizar los registros en la base de datos
+      const savedStats: RestaurantStatEntity[] = [];
+
+      for (const runData of restaurantRunsFromAPI) {
+        const existingStat = await this.getRestaurantStatById(runData.id);
+
+        if (existingStat) {
+          // Actualizar registro existente
+          await this.restaurantStatRepository.update(runData.id, runData);
+
+          const updatedStat = await this.getRestaurantStatById(runData.id);
+          if (updatedStat) {
+            savedStats.push(updatedStat);
+          }
+        } else {
+          // Crear nuevo registro con la relación al building
+          const newStat = await this.saveRestaurantStat({
+            ...runData,
+            building: { id: buildingId },
+          } as RestaurantStatEntity);
+          savedStats.push(newStat);
+        }
+      }
+
+      return {
+        success: true,
+        message: `Restaurant runs sincronizados correctamente para el edificio ${buildingId}`,
+        count: savedStats.length,
+        buildingId,
+      };
+    } catch (error) {
+      throw new Error(
+        `Error sincronizando restaurant runs para edificio ${buildingId}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
+    }
+  }
+
+  /**
+   * Sincroniza los restaurant runs de todos los edificios con la base de datos
+   * @param buildingIds - Array de IDs de edificios a sincronizar
+   * @returns Promise con el resultado de la sincronización
+   */
+  public async syncAllRestaurantRunsFromAPI(buildingIds: number[]) {
+    const results: SyncResult[] = [];
+    let totalCount = 0;
+
+    for (const buildingId of buildingIds) {
+      try {
+        const result = await this.syncRestaurantRunsFromAPI(buildingId);
+        results.push(result);
+        totalCount += result.count;
+      } catch (error) {
+        results.push({
+          success: false,
+          message: `Error sincronizando edificio ${buildingId}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          count: 0,
+          buildingId,
+        });
+      }
+    }
+
+    return {
+      success: true,
+      message: 'Sincronización completada',
+      totalCount,
+      results,
+    };
   }
 }
