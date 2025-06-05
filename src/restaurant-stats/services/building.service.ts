@@ -42,7 +42,26 @@ export class BuildingService {
    */
   public async getAllBuildings(): Promise<BuildingEntity[]> {
     return await this.buildingRepository.find({
-      order: { name: 'ASC' },
+      order: {
+        name: 'ASC',
+      },
+    });
+  }
+
+  /**
+   * Obtiene un edificio específico por su ID con sus estadísticas relacionadas
+   * @param id - ID del edificio
+   * @returns Promise con el edificio encontrado o null
+   */
+  public async getBuildingByIdWithStats(
+    id: number,
+  ): Promise<BuildingEntity | null> {
+    return await this.buildingRepository.findOne({
+      where: { id },
+      relations: ['restaurantStats'],
+      order: {
+        restaurantStats: { datetime: 'DESC' },
+      },
     });
   }
 

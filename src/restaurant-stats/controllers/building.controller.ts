@@ -1,4 +1,11 @@
-import { Controller, Get, Post } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Param,
+  ParseIntPipe,
+  NotFoundException,
+} from '@nestjs/common';
 import { BuildingService } from '../services/building.service';
 
 @Controller('buildings')
@@ -21,5 +28,21 @@ export class BuildingController {
   @Get()
   async getAllBuildings() {
     return await this.buildingService.getAllBuildings();
+  }
+
+  /**
+   * Obtiene un edificio específico por su ID con sus estadísticas relacionadas
+   * @param id - ID del edificio
+   * @returns Promise con el edificio encontrado
+   */
+  @Get(':id')
+  async getBuildingById(@Param('id', ParseIntPipe) id: number) {
+    const building = await this.buildingService.getBuildingByIdWithStats(id);
+
+    if (!building) {
+      throw new NotFoundException(`Edificio con ID ${id} no encontrado`);
+    }
+
+    return building;
   }
 }
