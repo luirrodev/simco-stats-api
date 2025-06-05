@@ -6,7 +6,6 @@ import { firstValueFrom } from 'rxjs';
 import { AxiosError } from 'axios';
 
 import { RestaurantStatEntity } from '../entities/restaurant-stat.entity';
-import { CreateRestaurantStatDto } from '../dto/create-restaurant-stat.dto';
 import { AuthService } from '../../auth/services/auth.service';
 
 @Injectable()
@@ -24,7 +23,7 @@ export class RestaurantStatsService {
    * @returns Promise con la entidad guardada
    */
   async saveRestaurantStat(
-    data: CreateRestaurantStatDto,
+    data: RestaurantStatEntity,
   ): Promise<RestaurantStatEntity> {
     const restaurantStat = this.restaurantStatRepository.create({
       ...data,
@@ -40,7 +39,7 @@ export class RestaurantStatsService {
    * @returns Promise con array de entidades guardadas
    */
   async saveRestaurantStats(
-    dataArray: CreateRestaurantStatDto[],
+    dataArray: RestaurantStatEntity[],
   ): Promise<RestaurantStatEntity[]> {
     const restaurantStats = dataArray.map((data) =>
       this.restaurantStatRepository.create({
@@ -66,7 +65,7 @@ export class RestaurantStatsService {
 
       // Hacer la petición HTTP usando firstValueFrom para convertir Observable a Promise
       const response = await firstValueFrom(
-        this.httpService.get<CreateRestaurantStatDto[]>(url, { headers }),
+        this.httpService.get<RestaurantStatEntity[]>(url, { headers }),
       );
 
       return response.data;
