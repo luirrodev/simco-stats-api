@@ -10,20 +10,6 @@ export class RestaurantStatsController {
   ) {}
 
   /**
-   * Obtiene los datos de restaurant runs desde la API externa de SimCompanies
-   * @param buildingId - ID del edificio del restaurante
-   * @returns Promise con los datos de las estadísticas del restaurante
-   */
-  @Get('fetch/:buildingId')
-  async fetchRestaurantRuns(
-    @Param('buildingId', ParseIntPipe) buildingId: number,
-  ) {
-    return await this.restaurantStatsService.fetchRestaurantRunsFromAPI(
-      buildingId,
-    );
-  }
-
-  /**
    * Sincroniza los restaurant runs de un edificio específico con la base de datos
    * @param buildingId - ID del edificio del restaurante
    * @returns Promise con el resultado de la sincronización
@@ -63,5 +49,14 @@ export class RestaurantStatsController {
   @Get(':id')
   async getRestaurantStatById(@Param('id', ParseIntPipe) id: number) {
     return await this.restaurantStatsService.getRestaurantStatById(id);
+  }
+
+  /**
+   * Obtiene todas las estadísticas de restaurantes
+   * @returns Promise con todas las estadísticas de restaurantes
+   */
+  @Get()
+  async getAllRestaurantStats() {
+    return await this.restaurantStatsService.getAllRestaurantStatsLast24Hours();
   }
 }

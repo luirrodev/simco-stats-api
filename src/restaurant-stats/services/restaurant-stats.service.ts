@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, MoreThanOrEqual } from 'typeorm';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 import { AxiosError } from 'axios';
@@ -105,6 +105,22 @@ export class RestaurantStatsService {
     return await this.restaurantStatRepository.findOne({
       where: { id },
       relations: ['building'],
+    });
+  }
+
+  /**
+   * Obtiene todas las estadísticas de restaurantes
+   * @returns Promise con todas las estadísticas de restaurantes
+   */
+  public async getAllRestaurantStatsLast24Hours(): Promise<
+    RestaurantStatEntity[]
+  > {
+    return await this.restaurantStatRepository.find({
+      where: {
+        datetime: MoreThanOrEqual(new Date(Date.now() - 24 * 60 * 60 * 1000)),
+      },
+      relations: ['building'],
+      order: { resolved: 'ASC' },
     });
   }
 
