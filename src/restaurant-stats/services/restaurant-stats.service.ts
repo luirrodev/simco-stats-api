@@ -123,7 +123,7 @@ export class RestaurantStatsService {
       id: number;
       name: string;
       size: number;
-      estadisticas: RestaurantStatEntity[];
+      stats: RestaurantStatEntity[];
     }[]
   > {
     // Obtener todos los building IDs únicos que tienen estadísticas
@@ -143,12 +143,12 @@ export class RestaurantStatsService {
       id: number;
       name: string;
       size: number;
-      estadisticas: RestaurantStatEntity[];
+      stats: RestaurantStatEntity[];
     }[] = [];
 
     // Para cada restaurante, obtener sus últimas 2 estadísticas
     for (const building of buildingsWithStats) {
-      const estadisticas = await this.restaurantStatRepository.find({
+      const stats = await this.restaurantStatRepository.find({
         where: { building: { id: building.building_id } },
         order: { datetime: 'DESC' },
         take: 2,
@@ -158,7 +158,7 @@ export class RestaurantStatsService {
         id: building.building_id,
         name: building.building_name,
         size: building.building_size,
-        estadisticas,
+        stats,
       });
     }
 
