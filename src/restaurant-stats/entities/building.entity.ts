@@ -1,4 +1,11 @@
-import { Entity, PrimaryColumn, Column, UpdateDateColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryColumn,
+  Column,
+  UpdateDateColumn,
+  OneToMany,
+} from 'typeorm';
+import { RestaurantStatEntity } from './restaurant-stat.entity';
 
 // interface SaladBarItem {
 //   kind: number;
@@ -50,6 +57,12 @@ export class BuildingEntity {
 
   @UpdateDateColumn()
   updatedAt?: Date;
+
+  @OneToMany(
+    () => RestaurantStatEntity,
+    (restaurantStat) => restaurantStat.building,
+  )
+  restaurantStats: RestaurantStatEntity[];
 
   // @Column({ type: 'jsonb' })
   // restaurantProperties: RestaurantProperties;
