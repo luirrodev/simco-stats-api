@@ -257,4 +257,22 @@ export class AuthService {
     const validCookieResponse = await this.ensureValidCookie();
     return validCookieResponse.cookie;
   }
+
+  /**
+   * Generates HTTP headers with a valid authentication cookie for API requests.
+   *
+   * @returns A Promise that resolves to a record containing HTTP header key-value pairs
+   *
+   */
+  async getHeaderWithValidCookie(): Promise<Record<string, string>> {
+    const validCookie = await this.getValidCookie();
+    return {
+      Referer: 'https://www.simcompanies.com/',
+      Origin: 'https://www.simcompanies.com',
+      'Content-Type': 'application/json',
+      'User-Agent':
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+      Cookie: validCookie,
+    };
+  }
 }
