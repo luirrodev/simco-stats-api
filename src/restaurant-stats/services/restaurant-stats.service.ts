@@ -142,13 +142,13 @@ export class RestaurantStatsService {
 
       return {
         success: true,
-        message: `Restaurant runs sincronizados correctamente para el edificio ${buildingId}`,
+        message: `Restaurant sincronizado correctamente`,
         count: savedStats.length,
         buildingId,
       };
     } catch (error) {
       throw new Error(
-        `Error sincronizando restaurant runs para edificio ${buildingId}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        `Error de sincronizacion para edificio ${buildingId}: ${error instanceof Error ? error.message : 'Unknown error'}`,
       );
     }
   }
