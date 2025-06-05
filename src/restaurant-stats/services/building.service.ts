@@ -37,6 +37,16 @@ export class BuildingService {
   }
 
   /**
+   * Obtiene todos los edificios de la base de datos
+   * @returns Promise con la lista de todos los edificios
+   */
+  public async getAllBuildings(): Promise<BuildingEntity[]> {
+    return await this.buildingRepository.find({
+      order: { name: 'ASC' },
+    });
+  }
+
+  /**
    * Obtiene los datos de buildings desde la API externa de SimCompanies
    * @returns Promise con los datos de los edificios
    */

@@ -1,4 +1,4 @@
-import { Controller, Post } from '@nestjs/common';
+import { Controller, Get, Post } from '@nestjs/common';
 import { BuildingService } from '../services/building.service';
 
 @Controller('buildings')
@@ -12,5 +12,14 @@ export class BuildingController {
   @Post('sync')
   async syncBuildingsFromAPI() {
     return await this.buildingService.syncBuildingsFromAPI();
+  }
+
+  /**
+   * Obtiene todos los edificios de la base de datos
+   * @returns Promise con la lista de todos los edificios
+   */
+  @Get()
+  async getAllBuildings() {
+    return await this.buildingService.getAllBuildings();
   }
 }
