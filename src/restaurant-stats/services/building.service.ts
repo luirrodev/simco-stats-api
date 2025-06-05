@@ -1,0 +1,136 @@
+import { Injectable } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { HttpService } from '@nestjs/axios';
+import { firstValueFrom } from 'rxjs';
+import { AxiosError } from 'axios';
+
+import { BuildingEntity } from '../entities/building.entity';
+import { AuthService } from '../../auth/services/auth.service';
+
+@Injectable()
+export class BuildingService {
+  constructor(
+    @InjectRepository(BuildingEntity)
+    private readonly buildingRepository: Repository<BuildingEntity>,
+    private readonly httpService: HttpService,
+    private readonly authService: AuthService,
+  ) {}
+
+  /**
+   * Guarda un solo edificio/restaurante
+   * @param data - Datos del edificio a guardar
+   * @returns Promise con la entidad guardada
+   */
+  // async saveBuilding(data: CreateBuildingDto): Promise<BuildingEntity> {
+  //   const building = this.buildingRepository.create(data);
+  //   return await this.buildingRepository.save(building);
+  // }
+
+  /**
+   * Guarda múltiples edificios/restaurantes
+   * @param dataArray - Array de datos de edificios a guardar
+   * @returns Promise con array de entidades guardadas
+   */
+  // async saveBuildings(
+  //   dataArray: CreateBuildingDto[],
+  // ): Promise<BuildingEntity[]> {
+  //   const buildings = dataArray.map((data) =>
+  //     this.buildingRepository.create(data),
+  //   );
+
+  //   return await this.buildingRepository.save(buildings);
+  // }
+
+  /**
+   * Obtiene un edificio por su ID
+   * @param id - ID del edificio
+   * @returns Promise con el edificio encontrado o null
+   */
+  // async getBuildingById(id: number): Promise<BuildingEntity | null> {
+  //   return await this.buildingRepository.findOne({ where: { id } });
+  // }
+
+  /**
+   * Obtiene los datos de buildings desde la API externa de SimCompanies
+   * @returns Promise con los datos de los edificios
+   */
+  async fetchBuildingsFromAPI() {
+    try {
+      const url = 'https://www.simcompanies.com/api/v2/companies/me/buildings/';
+
+      // Obtener los headers necesarios para la petición
+      const headers = await this.authService.getHeaderWithValidCookie();
+
+      // Agregar timestamp actual
+      headers['x-prot'] = '4e594feb6c94129e8e8f8e6ea896a375';
+      headers['x-ts'] = '1749145140240';
+
+      // Hacer la petición HTTP usando firstValueFrom para convertir Observable a Promise
+      const response = await firstValueFrom(
+        this.httpService.get<BuildingEntity[]>(url, { headers }),
+      );
+
+      // Filtrar solo los edificios que son restaurantes (category = "sales")
+      const restaurants = response.data
+        .filter(
+          (building: BuildingEntity) =>
+            building.category === 'sales' && building.kind === 'r',
+        )
+        .map((building) => {
+          // Retornar solo los campos necesarios
+          return {
+            id: building.id,
+            name: building.name,
+            size: building.size,
+          };
+        });
+
+      return restaurants;
+    } catch (error: unknown) {
+      if (error instanceof AxiosError) {
+        const axiosError = error as AxiosError;
+        console.log(axiosError.request);
+
+        throw new Error(
+          `Error fetching buildings: ${axiosError.message} - ${axiosError.response?.status}`,
+        );
+      }
+      // Type guard para Error genérico
+      if (error instanceof Error) {
+        throw new Error(`Failed to fetch buildings: ${error.message}`);
+      }
+
+      // Para cualquier otro tipo de error
+      throw new Error('Failed to fetch buildings: Unknown error');
+    }
+  }
+
+  /**
+   * Sincroniza los edificios obtenidos de la API con la base de datos
+   * @returns Promise con los edificios sincronizados
+   */
+  // async syncBuildingsFromAPI(): Promise<BuildingEntity[]> {
+  //   const buildingsFromAPI = await this.fetchBuildingsFromAPI();
+
+  //   // Guardar o actualizar los edificios en la base de datos
+  //   const savedBuildings = [];
+
+  //   for (const buildingData of buildingsFromAPI) {
+  //     const existingBuilding = await this.getBuildingById(buildingData.id);
+
+  //     if (existingBuilding) {
+  //       // Actualizar edificio existente
+  //       await this.buildingRepository.update(buildingData.id, buildingData);
+  //       const updatedBuilding = await this.getBuildingById(buildingData.id);
+  //       savedBuildings.push(updatedBuilding);
+  //     } else {
+  //       // Crear nuevo edificio
+  //       const newBuilding = await this.saveBuilding(buildingData);
+  //       savedBuildings.push(newBuilding);
+  //     }
+  //   }
+
+  //   return savedBuildings;
+  // }
+}
