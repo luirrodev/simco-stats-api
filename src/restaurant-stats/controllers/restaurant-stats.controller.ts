@@ -52,11 +52,11 @@ export class RestaurantStatsController {
   }
 
   /**
-   * Obtiene todas las estadísticas de restaurantes
-   * @returns Promise con todas las estadísticas de restaurantes
+   * Obtiene las últimas dos estadísticas de cada restaurante agrupadas por restaurante
+   * @returns Promise con los restaurantes y sus últimas dos estadísticas
    */
   @Get()
-  async getAllRestaurantStats() {
-    return await this.restaurantStatsService.getAllRestaurantStatsLast24Hours();
+  async getLastTwoStatsGroupedByRestaurant() {
+    return await this.restaurantStatsService.getLastTwoStatsGroupedByRestaurant();
   }
 }

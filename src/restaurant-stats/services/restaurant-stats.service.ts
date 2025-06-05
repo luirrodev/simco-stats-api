@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, MoreThanOrEqual } from 'typeorm';
+import { Repository } from 'typeorm';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 import { AxiosError } from 'axios';
@@ -13,6 +13,12 @@ interface SyncResult {
   message: string;
   count: number;
   buildingId: number;
+}
+
+interface BuildingWithStatsRaw {
+  building_id: number;
+  building_name: string;
+  building_size: number;
 }
 
 @Injectable()
@@ -109,19 +115,55 @@ export class RestaurantStatsService {
   }
 
   /**
-   * Obtiene todas las estadísticas de restaurantes
-   * @returns Promise con todas las estadísticas de restaurantes
+   * Obtiene las últimas dos estadísticas de cada restaurante agrupadas por restaurante
+   * @returns Promise con los restaurantes y sus últimas dos estadísticas
    */
-  public async getAllRestaurantStatsLast24Hours(): Promise<
-    RestaurantStatEntity[]
+  public async getLastTwoStatsGroupedByRestaurant(): Promise<
+    {
+      id: number;
+      name: string;
+      size: number;
+      estadisticas: RestaurantStatEntity[];
+    }[]
   > {
-    return await this.restaurantStatRepository.find({
-      where: {
-        datetime: MoreThanOrEqual(new Date(Date.now() - 24 * 60 * 60 * 1000)),
-      },
-      relations: ['building'],
-      order: { resolved: 'ASC' },
-    });
+    // Obtener todos los building IDs únicos que tienen estadísticas
+    const buildingsWithStats: BuildingWithStatsRaw[] =
+      await this.restaurantStatRepository
+        .createQueryBuilder('stat')
+        .leftJoin('stat.building', 'building')
+        .select([
+          'building.id as building_id',
+          'building.name as building_name',
+          'building.size as building_size',
+        ])
+        .groupBy('building.id, building.name, building.size')
+        .getRawMany();
+
+    const result: {
+      id: number;
+      name: string;
+      size: number;
+      estadisticas: RestaurantStatEntity[];
+    }[] = [];
+
+    // Para cada restaurante, obtener sus últimas 2 estadísticas
+    for (const building of buildingsWithStats) {
+      const estadisticas = await this.restaurantStatRepository.find({
+        where: { building: { id: building.building_id } },
+        order: { datetime: 'DESC' },
+        take: 2,
+      });
+
+      result.push({
+        id: building.building_id,
+        name: building.building_name,
+        size: building.building_size,
+        estadisticas,
+      });
+    }
+
+    // Ordenar por nombre del restaurante
+    return result.sort((a, b) => a.name.localeCompare(b.name));
   }
 
   /**
