@@ -46,7 +46,7 @@ export class SaleOrdersController {
 
     // Filtrar solo los edificios de oficinas de ventas (kind = 'O')
     const salesOfficeBuildings = allBuildings.filter(
-      (building) => building.kind === 'B',
+      (building) => building.size === 10,
     );
 
     // Extraer solo los IDs de los edificios
