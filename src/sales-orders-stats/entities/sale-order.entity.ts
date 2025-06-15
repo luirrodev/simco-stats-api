@@ -4,12 +4,19 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
+import { BuildingEntity } from '../../restaurant-stats/entities/building.entity';
 
 @Entity('sale_orders')
 export class SaleOrderEntity {
   @PrimaryColumn()
   id: number;
+
+  @ManyToOne(() => BuildingEntity)
+  @JoinColumn({ name: 'building_id' })
+  building: BuildingEntity;
 
   @Column({ type: 'timestamp with time zone' })
   datetime: Date;
