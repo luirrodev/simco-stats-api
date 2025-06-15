@@ -9,6 +9,7 @@ import { RestaurantStatsModule } from './restaurant-stats/restaurant-stats.modul
 
 import config from './config';
 import { enviroments } from './enviroments';
+import { SalesOrdersStatsModule } from './sales-orders-stats/sales-orders-stats.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { enviroments } from './enviroments';
     DatabaseModule,
     HealthModule,
     RestaurantStatsModule,
+    SalesOrdersStatsModule,
   ],
   controllers: [],
   providers: [],
