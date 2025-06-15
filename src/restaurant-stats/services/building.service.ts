@@ -77,19 +77,19 @@ export class BuildingService {
       const headers = await this.authService.getHeaderWithValidCookie();
 
       // Agregar timestamp actual
-      headers['x-prot'] = '4e594feb6c94129e8e8f8e6ea896a375';
-      headers['x-ts'] = '1749145140240';
+      headers['x-prot'] = '6f67753fb6b7056923a4e4a671cf750b';
+      headers['x-ts'] = '1750013151985';
 
       // Hacer la petición HTTP usando firstValueFrom para convertir Observable a Promise
       const response = await firstValueFrom(
         this.httpService.get<BuildingEntity[]>(url, { headers }),
       );
 
-      // Filtrar solo los edificios que son restaurantes (category = "sales")
+      // Filtrar solo los edificios que son Oficinas de Ventas (category = "sales")
       const restaurants = response.data
         .filter(
           (building: BuildingEntity) =>
-            building.category === 'sales' && building.kind === 'r',
+            building.category === 'sales' && building.kind === 'B',
         )
         .map((building) => {
           // Retornar solo los campos necesarios
