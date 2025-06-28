@@ -121,4 +121,14 @@ export class SaleOrdersController {
   async getSaleOrdersStats() {
     return await this.saleOrdersService.getSaleOrdersStats();
   }
+
+  /**
+   * Obtiene el promedio de precios por recurso en una fecha específica
+   * @param date - Fecha en formato YYYY-MM-DD
+   * @returns Promise con el promedio de precios por recurso
+   */
+  @Get('analytics/prices/:date')
+  async getAveragePricesByDate(@Param('date') date: string) {
+    return await this.saleOrdersService.getAveragePricesByDate(date);
+  }
 }

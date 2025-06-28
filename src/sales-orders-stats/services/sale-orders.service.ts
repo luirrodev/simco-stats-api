@@ -15,6 +15,16 @@ interface SyncResult {
   buildingId: number;
 }
 
+export interface ResourceAnalysis {
+  resource_kind: number;
+  average_price: string;
+  average_quality_bonus: string;
+  total_orders: number;
+  total_amount: number;
+  min_price: string;
+  max_price: string;
+}
+
 @Injectable()
 export class SaleOrdersService {
   constructor(
@@ -312,6 +322,59 @@ export class SaleOrdersService {
       resolved,
       pending,
       resolvedPercentage: total > 0 ? (resolved / total) * 100 : 0,
+    };
+  }
+
+  /**
+   * Obtiene el promedio de precios por recurso en una fecha específica
+   * @param date - Fecha en formato YYYY-MM-DD (fecha de resolución real)
+   * @returns Promise con el promedio de precios por recurso incluyendo bono de calidad
+   */
+  public async getAveragePricesByDate(date: string) {
+    // Primero obtener el total de sale orders del día
+    // Ajustamos la fecha restando 47 horas para encontrar las órdenes que se resolvieron en la fecha solicitada
+    const totalOrdersQuery = `
+      SELECT COUNT(*) as total_sale_orders_analyzed
+      FROM sale_orders 
+      WHERE (datetime + INTERVAL '47 hours')::date = $1
+        AND resolved = true 
+        AND jsonb_array_length(resources) > 0
+        AND "qualityBonus" IS NOT NULL
+    `;
+
+    const totalOrdersResult: [{ total_sale_orders_analyzed: string }] =
+      await this.saleOrderRepository.query(totalOrdersQuery, [date]);
+
+    const totalSaleOrdersAnalyzed = parseInt(
+      totalOrdersResult[0].total_sale_orders_analyzed,
+    );
+
+    const query = `
+      SELECT
+        (resource_data->>'kind')::integer as resource_kind,
+        ROUND(AVG((resource_data->>'price')::numeric), 2) as average_price,
+        ROUND(AVG(so."qualityBonus"), 4) as average_quality_bonus,
+        COUNT(*) as total_orders,
+        SUM((resource_data->>'amount')::integer) as total_amount,
+        MIN((resource_data->>'price')::numeric) as min_price,
+        MAX((resource_data->>'price')::numeric) as max_price
+      FROM sale_orders so,
+           jsonb_array_elements(so.resources) as resource_data
+      WHERE (so.datetime + INTERVAL '47 hours')::date = $1
+        AND so.resolved = true
+        AND jsonb_array_length(so.resources) > 0
+        AND so."qualityBonus" IS NOT NULL
+      GROUP BY (resource_data->>'kind')::integer
+      ORDER BY resource_kind
+    `;
+
+    const resourceData: ResourceAnalysis[] =
+      await this.saleOrderRepository.query(query, [date]);
+
+    return {
+      date,
+      total_sale_orders_analyzed: totalSaleOrdersAnalyzed,
+      resources: resourceData,
     };
   }
 }
