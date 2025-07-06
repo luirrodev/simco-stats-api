@@ -16,9 +16,27 @@ services:
     networks:
       - nestjs-network
 
+  pgadmin:
+    image: dpage/pgadmin4:9
+    container_name: simco-pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
+    volumes:
+      - simco_pgadmin_data:/var/lib/pgadmin
+    ports:
+      - '${PGADMIN_PORT}:80'
+    networks:
+      - nestjs-network
+    depends_on:
+      - postgres
+
 volumes:
   simco_stats_data:
     name: simco-stats-data
+  simco_pgadmin_data:
+    name: simco-pgadmin-data
 
 networks:
   nestjs-network:
