@@ -77,8 +77,8 @@ export class BuildingService {
       const headers = await this.authService.getHeaderWithValidCookie();
 
       // Agregar timestamp actual
-      headers['x-prot'] = '6f67753fb6b7056923a4e4a671cf750b';
-      headers['x-ts'] = '1750013151985';
+      headers['x-prot'] = 'b26059eb62ca4f2691eb13f6e8ec93a4';
+      headers['x-ts'] = '1751842560596';
 
       // Hacer la petición HTTP usando firstValueFrom para convertir Observable a Promise
       const response = await firstValueFrom(
