@@ -2,97 +2,310 @@
   <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
 </p>
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+# SimCo Restaurant Stats API
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
+<p align="center">
+  Una API RESTful construida con NestJS para analizar estadísticas de restaurantes y oficinas de ventas corporativas del juego SimCompanies. 
+  Esta aplicación permite sincronizar tus datos desde la API oficial de SimCompanies y realizar análisis detallados de mercado y rendimiento.
+</p>
+
+<p align="center">
 <a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
 <a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
+<a href="https://nodejs.org" target="_blank"><img src="https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg" alt="Node Version" /></a>
+<a href="https://www.postgresql.org/" target="_blank"><img src="https://img.shields.io/badge/PostgreSQL-15+-blue.svg" alt="PostgreSQL" /></a>
+<a href="https://typeorm.io/" target="_blank"><img src="https://img.shields.io/badge/TypeORM-0.3.x-orange.svg" alt="TypeORM" /></a>
 </p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
 
-## Description
+## 📋 Descripción
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+**SimCo Restaurant Stats API** es una aplicación backend diseñada para jugadores de [SimCompanies](https://www.simcompanies.com) que desean analizar el rendimiento de sus restaurantes y el comportamiento del mercado de órdenes de venta.
 
-## Project setup
+### 🎯 Principales funcionalidades:
 
-```bash
-$ pnpm install
+- **Sincronización de datos**: Obtiene automáticamente datos de restaurantes y órdenes de venta desde la API oficial de SimCompanies
+- **Análisis de restaurantes**: Rastrea métricas como rating, ocupancy, revenue, costs y reviews de restaurantes
+- **Análisis de mercado**: Monitorea precios, demanda y tendencias de recursos en el mercado
+- **Gestión de edificios**: Administra información de oficinas de ventas y restaurantes
+- **APIs de análisis**: Proporciona endpoints especializados para obtener estadísticas y tendencias
+
+### 🏢 Casos de uso:
+
+- **Optimización de restaurantes**: Analiza el rendimiento histórico para mejorar la rentabilidad
+- **Investigación de mercado**: Estudia tendencias de precios y demanda de recursos
+- **Toma de decisiones**: Obtén insights basados en datos para estrategias comerciales
+- **Monitoreo automatizado**: Seguimiento continuo del rendimiento de múltiples edificios
+
+## 🛠️ Tecnologías
+
+### Backend Framework
+
+- **[NestJS](https://nestjs.com/)** - Framework de Node.js progresivo para aplicaciones escalables
+- **[TypeScript](https://www.typescriptlang.org/)** - Superset tipado de JavaScript
+- **[Node.js](https://nodejs.org/)** v18+ - Runtime de JavaScript
+
+### Base de datos
+
+- **[PostgreSQL](https://www.postgresql.org/)** - Base de datos relacional robusta
+- **[TypeORM](https://typeorm.io/)** - ORM para TypeScript y JavaScript
+
+### Gestión de dependencias
+
+- **[pnpm](https://pnpm.io/)** - Gestor de paquetes eficiente y rápido
+
+### Librerías principales
+
+- **[@nestjs/axios](https://www.npmjs.com/package/@nestjs/axios)** - Cliente HTTP para integraciones con APIs externas
+- **[@nestjs/config](https://www.npmjs.com/package/@nestjs/config)** - Gestión de configuración y variables de entorno
+- **[joi](https://joi.dev/)** - Validación de esquemas de datos
+- **[rxjs](https://rxjs.dev/)** - Programación reactiva con observables
+
+### Desarrollo y calidad de código
+
+- **[ESLint](https://eslint.org/)** - Linter para identificar y arreglar problemas en el código
+- **[Prettier](https://prettier.io/)** - Formateador de código automático
+- **[Jest](https://jestjs.io/)** - Framework de testing
+
+## 🏗️ Arquitectura del proyecto
+
+```
+src/
+├── auth/                    # Módulo de autenticación
+│   ├── controllers/         # Controladores de auth
+│   ├── entities/           # Entidades de tokens
+│   └── services/           # Servicios de autenticación
+├── database/               # Configuración de base de datos
+│   ├── migrations/         # Migraciones de TypeORM
+│   └── typeorm.config.ts   # Configuración de TypeORM
+├── health/                 # Health checks de la API
+├── restaurant-stats/       # Módulo de estadísticas de restaurantes
+│   ├── controllers/        # Endpoints de restaurantes
+│   ├── entities/          # Entidades de restaurantes y edificios
+│   └── services/          # Lógica de negocio de restaurantes
+├── sales-orders-stats/     # Módulo de órdenes de venta
+│   ├── controllers/        # Endpoints de órdenes de venta
+│   ├── entities/          # Entidades de órdenes de venta
+│   ├── interfaces/        # Interfaces de análisis
+│   └── services/          # Lógica de negocio de órdenes
+├── app.module.ts          # Módulo principal
+├── config.ts              # Configuraciones globales
+├── enviroments.ts         # Configuración de entornos
+└── main.ts               # Punto de entrada de la aplicación
 ```
 
-## Compile and run the project
+## 🚀 Configuración del proyecto
+
+### Prerrequisitos
+
+- Node.js v18 o superior
+- PostgreSQL 15 o superior
+- pnpm (recomendado) o npm
+- Cuenta activa en SimCompanies
+
+### Variables de entorno
+
+Crea un archivo `.env` en la raíz del proyecto:
 
 ```bash
-# development
+# Base de datos
+DATABASE_URL=postgresql://usuario:contraseña@localhost:5432/simco_restaurant_stats
+
+# Credenciales de SimCompanies
+GAME_EMAIL=tu_email@ejemplo.com
+GAME_PASSWORD=tu_contraseña
+
+# Configuración opcional
+TIMEZONE_OFFSET=0
+NODE_ENV=dev
+```
+
+### Instalación
+
+```bash
+# Clonar el repositorio
+$ git clone <url-del-repositorio>
+$ cd simco-restaurant-stats
+
+# Instalar dependencias
+$ pnpm install
+
+# Ejecutar migraciones de base de datos
+$ pnpm run migration:run
+```
+
+### Compilar y ejecutar el proyecto
+
+```bash
+# Desarrollo
 $ pnpm run start
 
-# watch mode
+# Modo watch (recompilación automática)
 $ pnpm run start:dev
 
-# production mode
+# Modo producción
 $ pnpm run start:prod
 ```
 
-## Run tests
+### Migraciones de base de datos
 
 ```bash
-# unit tests
+# Generar nueva migración
+$ pnpm run migration:gen --name=nombre-de-la-migracion
+
+# Ejecutar migraciones pendientes
+$ pnpm run migration:run
+
+# Revertir última migración
+$ pnpm run migration:revert
+
+# Mostrar estado de migraciones
+$ pnpm run migration:show
+```
+
+## 📊 API Endpoints
+
+### Autenticación
+
+- `POST /auth/login` - Iniciar sesión en SimCompanies
+
+### Health Check
+
+- `GET /health` - Estado de la aplicación
+
+### Restaurantes
+
+- `GET /restaurant-stats` - Últimas estadísticas agrupadas por restaurante
+- `GET /restaurant-stats/:id` - Estadísticas de un restaurante específico
+- `POST /restaurant-stats/sync/:buildingId` - Sincronizar un restaurante
+- `POST /restaurant-stats/sync-all` - Sincronizar todos los restaurantes
+
+### Edificios
+
+- `GET /buildings` - Lista de todos los edificios
+- `GET /buildings/:id` - Información de un edificio específico
+- `POST /buildings/sync` - Sincronizar edificios desde SimCompanies
+
+### Órdenes de venta
+
+- `GET /sale-orders` - Lista de órdenes de venta
+- `GET /sale-orders/:id` - Orden específica por ID
+- `GET /sale-orders/status/resolved` - Órdenes resueltas
+- `GET /sale-orders/status/pending` - Órdenes pendientes
+- `GET /sale-orders/building/:buildingId` - Órdenes por edificio
+- `POST /sale-orders/sync/:buildingId` - Sincronizar órdenes de un edificio
+- `POST /sale-orders/sync-all` - Sincronizar todas las órdenes
+
+### Análisis de mercado
+
+- `GET /sale-orders/analytics/prices/:date` - Precios promedio por fecha
+- `GET /sale-orders/analytics/demand/:date` - Demanda total por fecha
+- `GET /sale-orders/analytics/market-summary/:date` - Resumen completo del mercado
+- `GET /sale-orders/analytics/market-data/:startDate/:endDate` - Datos históricos
+- `GET /sale-orders/analytics/top-demand/:date` - Recursos más demandados
+- `GET /sale-orders/analytics/stats` - Estadísticas generales
+
+## 📈 Ejemplos de uso
+
+### Obtener precios promedio del día
+
+```bash
+curl http://localhost:3000/sale-orders/analytics/prices/2025-06-17
+```
+
+Respuesta:
+
+```json
+{
+  "date": "2025-06-17",
+  "total_sale_orders_analyzed": 45,
+  "resources": [
+    {
+      "resource_kind": 91,
+      "average_price": "125000.00",
+      "average_quality_bonus": "2.2816",
+      "total_orders": 15,
+      "total_amount": 45,
+      "min_price": "120000",
+      "max_price": "130000"
+    }
+  ]
+}
+```
+
+### Sincronizar datos de restaurante
+
+```bash
+curl -X POST http://localhost:3000/restaurant-stats/sync/12345678
+```
+
+### Obtener demanda de recursos
+
+```bash
+curl http://localhost:3000/sale-orders/analytics/demand/2025-06-17
+```
+
+## 🧪 Tests
+
+```bash
+# Tests unitarios
 $ pnpm run test
 
-# e2e tests
+# Tests e2e
 $ pnpm run test:e2e
 
-# test coverage
+# Cobertura de tests
 $ pnpm run test:cov
 ```
 
-## Deployment
+## 📝 Desarrollo
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+### Linting y formateo
 
 ```bash
-$ pnpm install -g mau
-$ mau deploy
+# Ejecutar linter
+$ pnpm run lint
+
+# Formatear código
+$ pnpm run format
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+### Estructura de commits
 
-## Resources
+Se recomienda usar commits descriptivos siguiendo el formato:
 
-Check out a few resources that may come in handy when working with NestJS:
+```
+tipo(scope): descripción
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+feat(auth): añadir autenticación con SimCompanies
+fix(database): corregir migración de sale_orders
+docs(readme): actualizar documentación de API
+```
 
-## Support
+## 🤝 Contribución
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+1. Fork el proyecto
+2. Crea tu feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit tus cambios (`git commit -m 'Add some AmazingFeature'`)
+4. Push al branch (`git push origin feature/AmazingFeature`)
+5. Abre un Pull Request
 
-## Stay in touch
+## 📄 Licencia
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+Este proyecto está bajo la Licencia MIT. Ver el archivo `LICENSE` para más detalles.
 
-## License
+## 📞 Soporte
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+Para preguntas, problemas o sugerencias:
+
+- Abre un [issue](../../issues) en GitHub
+- Contacta al equipo de desarrollo
+
+## 🔄 Changelog
+
+### v1.0.0
+
+- ✨ Sincronización inicial de datos de restaurantes
+- ✨ Análisis de órdenes de venta
+- ✨ APIs de análisis de mercado
+- ✨ Gestión de edificios y oficinas de ventas
+- ✨ Sistema de autenticación con SimCompanies
