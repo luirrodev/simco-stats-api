@@ -72,12 +72,10 @@ export class SaleOrdersService {
    * @returns Promise con los datos de las sale orders
    */
   async fetchSaleOrdersFromAPI(buildingId: number) {
+    const url = `https://www.simcompanies.com/api/v2/companies/buildings/${buildingId}/sales-orders/`;
+    // Obtener los headers necesarios para la petición
+    const headers = await this.authService.getHeaderWithValidCookie();
     try {
-      const url = `https://www.simcompanies.com/api/v2/companies/buildings/${buildingId}/sales-orders/`;
-
-      // Obtener los headers necesarios para la petición
-      const headers = await this.authService.getHeaderWithValidCookie();
-
       // Hacer la petición HTTP usando firstValueFrom para convertir Observable a Promise
       const response = await firstValueFrom(
         this.httpService.get<SaleOrderEntity[]>(url, { headers }),
