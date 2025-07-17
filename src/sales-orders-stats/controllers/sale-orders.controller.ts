@@ -7,7 +7,7 @@ import {
   Query,
 } from '@nestjs/common';
 import { SaleOrdersService } from '../services/sale-orders.service';
-import { BuildingService } from '../../restaurant-stats/services/building.service';
+import { BuildingService } from '../../building/services/building.service';
 
 export interface SyncResult {
   success: boolean;

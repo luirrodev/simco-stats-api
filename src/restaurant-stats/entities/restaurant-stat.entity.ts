@@ -7,7 +7,7 @@ import {
   ManyToOne,
   JoinColumn,
 } from 'typeorm';
-import { BuildingEntity } from './building.entity';
+import { BuildingEntity } from '../../building/entities/building.entity';
 
 @Entity('restaurant_stats')
 export class RestaurantStatEntity {

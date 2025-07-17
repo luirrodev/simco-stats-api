@@ -6,14 +6,14 @@ import { SaleOrderEntity } from './entities/sale-order.entity';
 import { SaleOrdersService } from './services/sale-orders.service';
 import { SaleOrdersController } from './controllers/sale-orders.controller';
 import { AuthModule } from '../auth/auth.module';
-import { RestaurantStatsModule } from '../restaurant-stats/restaurant-stats.module';
+import { BuildingModule } from 'src/building/building.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([SaleOrderEntity]),
     HttpModule,
     AuthModule,
-    RestaurantStatsModule,
+    BuildingModule,
   ],
   controllers: [SaleOrdersController],
   providers: [SaleOrdersService],

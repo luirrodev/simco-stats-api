@@ -6,6 +6,7 @@ import { AuthModule } from './auth/auth.module';
 import { DatabaseModule } from './database/database.module';
 import { HealthModule } from './health/health.module';
 import { RestaurantStatsModule } from './restaurant-stats/restaurant-stats.module';
+import { BuildingModule } from './building/building.module';
 
 import config from './config';
 import { enviroments } from './enviroments';
@@ -30,6 +31,7 @@ import { SalesOrdersStatsModule } from './sales-orders-stats/sales-orders-stats.
     HealthModule,
     RestaurantStatsModule,
     SalesOrdersStatsModule,
+    BuildingModule,
   ],
   controllers: [],
   providers: [],

@@ -1,6 +1,6 @@
 import { Controller, Get, Param, ParseIntPipe, Post } from '@nestjs/common';
 import { RestaurantStatsService } from '../services/restaurant-stats.service';
-import { BuildingService } from '../services/building.service';
+import { BuildingService } from 'src/building/services/building.service';
 
 @Controller('restaurant-stats')
 export class RestaurantStatsController {
