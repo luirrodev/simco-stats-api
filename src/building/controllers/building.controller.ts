@@ -1,0 +1,49 @@
+import {
+  Controller,
+  Get,
+  Post,
+  Param,
+  ParseIntPipe,
+  NotFoundException,
+  HttpException,
+} from '@nestjs/common';
+import { BuildingService } from '../services/building.service';
+
+@Controller('buildings')
+export class BuildingController {
+  constructor(private readonly buildingService: BuildingService) {}
+
+  @Post('sync')
+  async syncBuildingsFromAPI() {
+    try {
+      return await this.buildingService.syncBuildingsFromAPI();
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new HttpException(
+        {
+          message: 'Error inesperado al sincronizar edificios',
+          details: error instanceof Error ? error.message : String(error),
+        },
+        500,
+      );
+    }
+  }
+
+  @Get()
+  async getAllBuildings() {
+    return await this.buildingService.getAllBuildings();
+  }
+
+  @Get(':id')
+  async getBuildingById(@Param('id', ParseIntPipe) id: number) {
+    const building = await this.buildingService.getBuildingByIdWithStats(id);
+
+    if (!building) {
+      throw new NotFoundException(`Edificio con ID ${id} no encontrado`);
+    }
+
+    return building;
+  }
+}
