@@ -44,9 +44,11 @@ export class SaleOrdersController {
     // Obtener todos los edificios de la base de datos
     const allBuildings = await this.buildingService.getAllBuildings();
 
-    // Filtrar solo los edificios de oficinas de ventas (kind = 'B')
+    // Filtrar solo los edificios de oficinas de ventas (kind = 'B') y que esten en operativo
     const salesOfficeBuildings = allBuildings.filter(
-      (building) => building.kind === 'B',
+      (building) =>
+        building.kind === 'B' &&
+        !(building.name && building.name.includes('[OLD]')),
     );
 
     // Extraer solo los IDs de los edificios
