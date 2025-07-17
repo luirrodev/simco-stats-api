@@ -77,8 +77,8 @@ export class BuildingService {
       const headers = await this.authService.getHeaderWithValidCookie();
 
       // Agregar timestamp actual
-      headers['x-prot'] = 'b26059eb62ca4f2691eb13f6e8ec93a4';
-      headers['x-ts'] = '1751842560596';
+      headers['x-prot'] = 'ab2e7c53329a1a1a1ec45700f03a2fcc';
+      headers['x-ts'] = '1752187880549';
 
       // Hacer la petición HTTP usando firstValueFrom para convertir Observable a Promise
       const response = await firstValueFrom(
@@ -87,16 +87,14 @@ export class BuildingService {
 
       // Filtrar solo los edificios que son Oficinas de Ventas (category = "sales")
       const restaurants = response.data
-        .filter(
-          (building: BuildingEntity) =>
-            building.category === 'sales' && building.kind === 'B',
-        )
+        .filter((building: BuildingEntity) => building.category === 'sales')
         .map((building) => {
           // Retornar solo los campos necesarios
           return {
             id: building.id,
             name: building.name,
             size: building.size,
+            kind: building.kind,
           };
         });
 

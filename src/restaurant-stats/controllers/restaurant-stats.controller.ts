@@ -32,8 +32,14 @@ export class RestaurantStatsController {
     // Obtener todos los edificios de la base de datos
     const buildings = await this.buildingService.getAllBuildings();
 
+    const buildingsFilters = buildings.filter(
+      (building) => building.kind === 'r',
+    );
+
     // Extraer solo los IDs de los edificios
-    const buildingIds = buildings.map((building) => building.id);
+    const buildingIds = buildingsFilters.map((building) => building.id);
+
+    console.log(buildingIds);
 
     // Sincronizar todos los restaurant runs
     return await this.restaurantStatsService.syncAllRestaurantRunsFromAPI(
