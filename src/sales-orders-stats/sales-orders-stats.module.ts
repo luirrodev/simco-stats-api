@@ -4,6 +4,7 @@ import { HttpModule } from '@nestjs/axios';
 
 import { SaleOrderEntity } from './entities/sale-order.entity';
 import { SaleOrdersService } from './services/sale-orders.service';
+import { SaleOrdersSchedulerService } from './services/sale-orders-scheduler.service';
 import { SaleOrdersController } from './controllers/sale-orders.controller';
 import { AuthModule } from '../auth/auth.module';
 import { BuildingModule } from 'src/building/building.module';
@@ -16,7 +17,7 @@ import { BuildingModule } from 'src/building/building.module';
     BuildingModule,
   ],
   controllers: [SaleOrdersController],
-  providers: [SaleOrdersService],
-  exports: [SaleOrdersService],
+  providers: [SaleOrdersService, SaleOrdersSchedulerService],
+  exports: [SaleOrdersService, SaleOrdersSchedulerService],
 })
 export class SalesOrdersStatsModule {}
