@@ -22,8 +22,6 @@ export class BuildingService {
     private readonly authService: AuthService,
   ) {}
 
-  // ... (resto del código igual que el original)
-
   /**
    * Guarda un solo edificio/restaurante
    * @param data - Datos del edificio a guardar
@@ -39,7 +37,7 @@ export class BuildingService {
    * @param id - ID del edificio
    * @returns Promise con el edificio encontrado o null
    */
-  private async getBuildingById(id: number): Promise<BuildingEntity | null> {
+  public async getBuildingById(id: number): Promise<BuildingEntity | null> {
     return await this.buildingRepository.findOne({ where: { id } });
   }
 
@@ -53,6 +51,17 @@ export class BuildingService {
         name: 'ASC',
       },
     });
+  }
+
+  /**
+   * Obtiene los IDs de todos los edificios de tipo "sales office"
+   */
+  public async getSalesOfficeIds() {
+    const buildings = await this.getAllBuildings();
+    // Filtrar solo oficinas de ventas (kind = 'B')
+    return buildings
+      .filter((building) => building.kind === 'B')
+      .map((building) => building.id);
   }
 
   /**

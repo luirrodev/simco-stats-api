@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
 import * as Joi from 'joi';
 
 import { AuthModule } from './auth/auth.module';
@@ -26,6 +27,7 @@ import { SalesOrdersStatsModule } from './sales-orders-stats/sales-orders-stats.
         TIMEZONE_OFFSET: Joi.number().default(0),
       }),
     }),
+    ScheduleModule.forRoot(),
     AuthModule,
     DatabaseModule,
     HealthModule,
