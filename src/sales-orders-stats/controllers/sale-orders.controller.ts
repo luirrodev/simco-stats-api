@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import { SaleOrdersService } from '../services/sale-orders.service';
 import { BuildingService } from '../../building/services/building.service';
+import { SaleOrdersSchedulerService } from '../services/sale-orders-scheduler.service';
 
 export interface SyncResult {
   success: boolean;
@@ -20,6 +21,7 @@ export interface SyncResult {
 export class SaleOrdersController {
   constructor(
     private readonly saleOrdersService: SaleOrdersService,
+    private readonly saleOrdersSchedulerService: SaleOrdersSchedulerService,
     private readonly buildingService: BuildingService,
   ) {}
 
@@ -132,5 +134,27 @@ export class SaleOrdersController {
   @Get('analytics/prices/:date')
   async getAveragePricesByDate(@Param('date') date: string) {
     return await this.saleOrdersService.getAveragePricesByDate(date);
+  }
+
+  /**
+   * Ejecuta manualmente el proceso de sincronización diaria y programación de tareas
+   */
+  @Post('execute-daily-sync')
+  async executeDailySyncManually() {
+    try {
+      await this.saleOrdersSchedulerService.handleDailySyncSaleOrders();
+
+      return {
+        success: true,
+        message: 'Proceso de sincronización diaria ejecutado correctamente',
+        executedAt: new Date().toISOString(),
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: `Error al ejecutar sincronización diaria: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        executedAt: new Date().toISOString(),
+      };
+    }
   }
 }
