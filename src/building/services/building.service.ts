@@ -54,14 +54,18 @@ export class BuildingService {
   }
 
   /**
-   * Obtiene los IDs de todos los edificios de tipo "sales office"
+   * Obtiene los IDs y nombres de todos los edificios de tipo "sales office"
+   * @returns Array de objetos con id y name de los edificios de ventas
    */
   public async getSalesOfficeIds() {
     const buildings = await this.getAllBuildings();
     // Filtrar solo oficinas de ventas (kind = 'B')
     return buildings
       .filter((building) => building.kind === 'B')
-      .map((building) => building.id);
+      .map((building) => ({
+        id: building.id,
+        name: building.name,
+      }));
   }
 
   /**
