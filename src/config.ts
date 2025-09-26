@@ -10,5 +10,8 @@ export default registerAs('config', () => {
       password: process.env.GAME_PASSWORD,
       timezone_offset: process.env.TIMEZONE_OFFSET,
     },
+    redis: {
+      url: process.env.REDIS_URL,
+    },
   };
 });
