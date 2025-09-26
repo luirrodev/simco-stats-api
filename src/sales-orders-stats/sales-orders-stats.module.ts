@@ -8,6 +8,7 @@ import { SaleOrdersSchedulerService } from './services/sale-orders-scheduler.ser
 import { SaleOrdersController } from './controllers/sale-orders.controller';
 import { AuthModule } from '../auth/auth.module';
 import { BuildingModule } from 'src/building/building.module';
+import { QueueModule } from 'src/queue/queue.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { BuildingModule } from 'src/building/building.module';
     HttpModule,
     AuthModule,
     BuildingModule,
+    QueueModule,
   ],
   controllers: [SaleOrdersController],
   providers: [SaleOrdersService, SaleOrdersSchedulerService],
