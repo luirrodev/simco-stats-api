@@ -12,6 +12,9 @@ import { BuildingModule } from './building/building.module';
 import config from './config';
 import { enviroments } from './enviroments';
 import { SalesOrdersStatsModule } from './sales-orders-stats/sales-orders-stats.module';
+import { QueueModule } from './queue/queue.module';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
 
 @Module({
   imports: [
@@ -25,6 +28,7 @@ import { SalesOrdersStatsModule } from './sales-orders-stats/sales-orders-stats.
         GAME_EMAIL: Joi.string().email().required(),
         GAME_PASSWORD: Joi.string().required(),
         TIMEZONE_OFFSET: Joi.number().default(0),
+        REDIS_URL: Joi.string().required(),
       }),
     }),
     ScheduleModule.forRoot(),
@@ -34,8 +38,9 @@ import { SalesOrdersStatsModule } from './sales-orders-stats/sales-orders-stats.
     RestaurantStatsModule,
     SalesOrdersStatsModule,
     BuildingModule,
+    QueueModule,
   ],
-  controllers: [],
-  providers: [],
+  controllers: [AppController],
+  providers: [AppService],
 })
 export class AppModule {}
