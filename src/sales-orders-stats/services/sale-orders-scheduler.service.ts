@@ -3,7 +3,7 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { BuildingService } from 'src/building/services/building.service';
 import { InjectRepository } from '@nestjs/typeorm';
 import { SaleOrderEntity } from '../entities/sale-order.entity';
-import { LessThan, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import { QueueService } from 'src/queue/queue.service';
 
 type BuildingData = {
@@ -47,20 +47,19 @@ export class SaleOrdersSchedulerService implements OnModuleInit {
     );
     let tasksScheduled = 0;
     const now = new Date();
-    const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
     const buildings = await this.buildingService.getSalesOfficeIds();
 
     for (const building of buildings) {
       try {
-        const latestUnresolvedOrder = await this.saleOrderRepository.findOne({
+        const [latestUnresolvedOrder] = await this.saleOrderRepository.find({
           where: {
             resolved: false,
             building: { id: building.id },
-            datetime: LessThan(twentyFourHoursAgo),
           },
           order: {
             datetime: 'DESC',
           },
+          take: 1,
         });
 
         if (latestUnresolvedOrder) {
