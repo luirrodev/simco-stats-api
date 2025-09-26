@@ -1,0 +1,42 @@
+name: Keep Render App Alive
+
+# Evita ejecuciones superpuestas del workflow
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: true
+
+on:
+  schedule:
+    # Se ejecuta cada 10 minutos para mantener la aplicación activa
+    - cron: "*/10 * * * *"
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    # Agrega un tiempo de espera para el job para evitar que se quede colgado
+    timeout-minutes: 5
+
+    steps:
+      - name: Ping Render App
+        run: |
+          echo "Haciendo ping a la aplicación en ${{ secrets.RENDER_APP_URL }}..."
+          # -L: sigue redirecciones
+          # -s: modo silencioso
+          # -o /dev/null: descarta el cuerpo de la respuesta
+          # -w "%{http_code}": escribe el código de estado HTTP a stdout
+          response=$(curl -L -s -o /dev/null -w "%{http_code}" ${{ secrets.RENDER_APP_URL }})
+          echo "Código de respuesta: $response"
+
+          if [ $response -ge 200 ] && [ $response -lt 300 ]; then
+            echo "✅ App está activa y respondiendo correctamente (Código: $response)"
+          elif [ $response -eq 404 ]; then
+            echo "⚠️  App activa pero ruta no encontrada (Código: $response). Esto puede ser normal si no tienes una ruta raíz '/'."
+          else
+            echo "❌ App no está respondiendo como se esperaba (Código: $response)"
+            exit 1
+          fi
+
+      - name: Timestamp
+        # Se ejecuta siempre, incluso si el paso anterior falla, para tener un registro
+        if: always()
+        run: echo "Último ping realizado el $(date)"
