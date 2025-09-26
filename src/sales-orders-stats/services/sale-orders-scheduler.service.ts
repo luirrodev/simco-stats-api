@@ -1,28 +1,50 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { SaleOrdersService } from './sale-orders.service';
-import { BuildingService } from '../../building/services/building.service';
+import { BuildingService } from 'src/building/services/building.service';
 import { InjectRepository } from '@nestjs/typeorm';
 import { SaleOrderEntity } from '../entities/sale-order.entity';
 import { LessThan, Repository } from 'typeorm';
+import { QueueService } from 'src/queue/queue.service';
+
+type BuildingData = {
+  id: number;
+  name: string;
+};
 
 @Injectable()
-export class SaleOrdersSchedulerService {
+export class SaleOrdersSchedulerService implements OnModuleInit {
   private readonly logger = new Logger(SaleOrdersSchedulerService.name);
-  private scheduledTimeouts = new Map<number, NodeJS.Timeout>(); // Para rastrear timeouts programados
+  private readonly JOB_NAME = 'sync-building';
 
   constructor(
     @InjectRepository(SaleOrderEntity)
     private readonly saleOrderRepository: Repository<SaleOrderEntity>,
-    private readonly saleOrdersService: SaleOrdersService,
     private readonly buildingService: BuildingService,
+    private readonly queueService: QueueService,
   ) {}
 
+  async onModuleInit() {
+    this.logger.log('SaleOrdersSchedulerService inicializado.');
+    const counts = await this.queueService.getJobCounts();
+    this.logger.log(
+      `Estado inicial de la cola 'sale-orders-sync': ${JSON.stringify(counts)}`,
+    );
+    const { cleaned } = await this.queueService.cleanOldJobs(24 * 7); // Limpia trabajos de más de 7 días
+    if (cleaned > 0) {
+      this.logger.log(
+        `Se han limpiado ${cleaned} trabajos antiguos de la cola.`,
+      );
+    }
+  }
+
   /**
-   * Ejecuta la sincronización de sale orders todos los días a las 12:00 AM
+   * Ejecuta la sincronización de sale orders todos los días a las 6:00 AM
    */
   @Cron(CronExpression.EVERY_DAY_AT_6AM)
   async handleDailySyncSaleOrders() {
+    this.logger.log(
+      'Iniciando proceso diario de programación de sincronización de Sale Orders...',
+    );
     let tasksScheduled = 0;
     const now = new Date();
     const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
@@ -30,67 +52,51 @@ export class SaleOrdersSchedulerService {
 
     for (const building of buildings) {
       try {
-        // Buscar sale orders de este building con más de 24 horas
-        const oldSaleOrders = await this.saleOrderRepository.find({
+        const latestUnresolvedOrder = await this.saleOrderRepository.findOne({
           where: {
             resolved: false,
             building: { id: building.id },
             datetime: LessThan(twentyFourHoursAgo),
           },
           order: {
-            datetime: 'DESC', // Ordenar por datetime descendente para obtener la más reciente
+            datetime: 'DESC',
           },
-          take: 1, // Solo tomar la primera (más reciente)
         });
 
-        if (oldSaleOrders.length > 0) {
-          const targetSaleOrder = oldSaleOrders[0];
-
-          // Calcular la hora de ejecución: datetime + 3 minutos
+        if (latestUnresolvedOrder) {
           const executionTime = new Date(
-            targetSaleOrder.datetime.getTime() +
+            latestUnresolvedOrder.datetime.getTime() +
               47 * 60 * 60 * 1000 +
               3 * 60 * 1000,
           );
 
-          // Solo programar si la hora de ejecución es en el futuro
           if (executionTime.getTime() > now.getTime()) {
-            const scheduleResult = this.scheduleBuildingSyncAt(
-              building.id,
+            const delay = executionTime.getTime() - now.getTime();
+            const jobId = `sync-${building.id}-${latestUnresolvedOrder.id}`;
+
+            await this.queueService.scheduleJob(
+              this.JOB_NAME,
+              {
+                buildingId: building.id,
+                buildingName: building.name,
+                saleOrderId: latestUnresolvedOrder.id,
+              },
+              delay,
+              jobId,
+            );
+
+            tasksScheduled++;
+            this.logScheduledJob(
+              building,
+              latestUnresolvedOrder,
               executionTime,
-              building.name,
             );
-
-            if (scheduleResult.success) {
-              tasksScheduled++;
-              const targetDate = new Date(targetSaleOrder.datetime);
-              const targetDateFormatted = `${targetDate.getFullYear()}/${String(targetDate.getMonth() + 1).padStart(2, '0')}/${String(targetDate.getDate()).padStart(2, '0')} ${String(targetDate.getHours()).padStart(2, '0')}:${String(targetDate.getMinutes()).padStart(2, '0')}:${String(targetDate.getSeconds()).padStart(2, '0')}`;
-              const execDateFormatted = `${executionTime.getFullYear()}/${String(executionTime.getMonth() + 1).padStart(2, '0')}/${String(executionTime.getDate()).padStart(2, '0')} ${String(executionTime.getHours()).padStart(2, '0')}:${String(executionTime.getMinutes()).padStart(2, '0')}:${String(executionTime.getSeconds()).padStart(2, '0')}`;
-
-              this.logger.log(
-                `Tarea programada para ${building.name} basada en sale order ${targetSaleOrder.id} (${targetDateFormatted}) -> ejecutar a las ${execDateFormatted}`,
-              );
-            } else {
-              const targetDate = new Date(targetSaleOrder.datetime);
-              const targetDateFormatted = `${targetDate.getFullYear()}/${String(targetDate.getMonth() + 1).padStart(2, '0')}/${String(targetDate.getDate()).padStart(2, '0')} ${String(targetDate.getHours()).padStart(2, '0')}:${String(targetDate.getMinutes()).padStart(2, '0')}:${String(targetDate.getSeconds()).padStart(2, '0')}`;
-              const execDateFormatted = `${executionTime.getFullYear()}/${String(executionTime.getMonth() + 1).padStart(2, '0')}/${String(executionTime.getDate()).padStart(2, '0')} ${String(executionTime.getHours()).padStart(2, '0')}:${String(executionTime.getMinutes()).padStart(2, '0')}:${String(executionTime.getSeconds()).padStart(2, '0')}`;
-
-              this.logger.warn(
-                `No se pudo programar tarea para ${building.name} basada en sale order ${targetSaleOrder.id} (${targetDateFormatted}) -> ejecutar a las ${execDateFormatted}`,
-              );
-            }
           } else {
-            const execDateFormatted = `${executionTime.getFullYear()}/${String(executionTime.getMonth() + 1).padStart(2, '0')}/${String(executionTime.getDate()).padStart(2, '0')} ${String(executionTime.getHours()).padStart(2, '0')}:${String(executionTime.getMinutes()).padStart(2, '0')}:${String(executionTime.getSeconds()).padStart(2, '0')}`;
-            const targetDate = new Date(targetSaleOrder.datetime);
-            const targetDateFormatted = `${targetDate.getFullYear()}/${String(targetDate.getMonth() + 1).padStart(2, '0')}/${String(targetDate.getDate()).padStart(2, '0')} ${String(targetDate.getHours()).padStart(2, '0')}:${String(targetDate.getMinutes()).padStart(2, '0')}:${String(targetDate.getSeconds()).padStart(2, '0')}`;
-
-            this.logger.debug(
-              `${building.name} La hora de ejecución calculada (${execDateFormatted}) ya pasó. Sale order datetime: ${targetDateFormatted}`,
-            );
+            this.logSkippedJob(building, latestUnresolvedOrder, executionTime);
           }
         } else {
           this.logger.debug(
-            `${building.name} No se encontraron sale orders con más de 24 horas`,
+            `No se encontraron sale orders con más de 24 horas para ${building.name}`,
           );
         }
       } catch (error) {
@@ -107,94 +113,38 @@ export class SaleOrdersSchedulerService {
     );
   }
 
-  /**
-   * Programa la sincronización de un building específico para una hora determinada
-   * @param buildingId - ID del building a sincronizar
-   * @param executionTime - Fecha y hora exacta cuando ejecutar la sincronización
-   * @returns Promise con información sobre la programación
-   */
-  public scheduleBuildingSyncAt(
-    buildingId: number,
+  private logScheduledJob(
+    building: BuildingData,
+    order: SaleOrderEntity,
     executionTime: Date,
-    buildingName?: string,
   ) {
-    try {
-      const now = new Date();
-      const delayMs = executionTime.getTime() - now.getTime();
+    const targetDateFormatted = this.formatDate(order.datetime);
+    const execDateFormatted = this.formatDate(executionTime);
 
-      // Generar un ID único para este timeout (usando buildingId y timestamp)
-      const timeoutId = parseInt(
-        `${buildingId}${Date.now().toString().slice(-6)}`,
-      );
+    this.logger.log(
+      `Tarea programada para ${building.name} basada en sale order ${order.id} (${targetDateFormatted}) -> ejecutar a las ${execDateFormatted}`,
+    );
+  }
 
-      // Programar la sincronización
-      const timeout = setTimeout(() => {
-        const execDateFormatted = `${executionTime.getFullYear()}/${String(executionTime.getMonth() + 1).padStart(2, '0')}/${String(executionTime.getDate()).padStart(2, '0')} ${String(executionTime.getHours()).padStart(2, '0')}:${String(executionTime.getMinutes()).padStart(2, '0')}:${String(executionTime.getSeconds()).padStart(2, '0')}`;
+  private logSkippedJob(
+    building: BuildingData,
+    order: SaleOrderEntity,
+    executionTime: Date,
+  ) {
+    const execDateFormatted = this.formatDate(executionTime);
+    const targetDateFormatted = this.formatDate(order.datetime);
 
-        this.logger.log(
-          `Ejecutando sincronización programada para ${buildingName || `building ${buildingId}`} a las ${execDateFormatted}`,
-        );
+    this.logger.debug(
+      `${building.name} La hora de ejecución calculada (${execDateFormatted}) ya pasó. Sale order datetime: ${targetDateFormatted}`,
+    );
+  }
 
-        this.saleOrdersService
-          .syncSaleOrdersFromAPI(buildingId)
-          .then(() => {
-            this.logger.log(
-              `Sincronización programada completada para ${buildingName || `building ${buildingId}`}`,
-            );
-          })
-          .catch((error) => {
-            this.logger.error(
-              `Error en sincronización programada para ${buildingName || `building ${buildingId}`}:`,
-              error,
-            );
-          })
-          .finally(() => {
-            // Remover el timeout del mapa una vez ejecutado
-            this.scheduledTimeouts.delete(timeoutId);
-          });
-      }, delayMs);
-
-      // Guardar el timeout en el mapa
-      this.scheduledTimeouts.set(timeoutId, timeout);
-
-      // Formatear el tiempo restante
-      const seconds = Math.floor((delayMs / 1000) % 60);
-      const minutes = Math.floor((delayMs / (1000 * 60)) % 60);
-      const hours = Math.floor((delayMs / (1000 * 60 * 60)) % 24);
-      const days = Math.floor(delayMs / (1000 * 60 * 60 * 24));
-
-      let timeRemaining = '';
-      if (days > 0) timeRemaining += `${days}d `;
-      if (hours > 0) timeRemaining += `${hours}h `;
-      if (minutes > 0) timeRemaining += `${minutes}m `;
-      timeRemaining += `${seconds}s`;
-
-      // Formatear la fecha de ejecución
-      const execDate = new Date(executionTime);
-      const formattedDate = `${execDate.getFullYear()}/${String(execDate.getMonth() + 1).padStart(2, '0')}/${String(execDate.getDate()).padStart(2, '0')} ${String(execDate.getHours()).padStart(2, '0')}:${String(execDate.getMinutes()).padStart(2, '0')}:${String(execDate.getSeconds()).padStart(2, '0')}`;
-
-      this.logger.log(
-        `Programada sincronización automática para ${buildingName || `building ${buildingId}`} en ${timeRemaining} (${formattedDate})`,
-      );
-
-      return {
-        success: true,
-        message: `Sincronización programada exitosamente para building ${buildingId}`,
-        scheduledFor: executionTime.toISOString(),
-        delayMs: delayMs,
-      };
-    } catch (error) {
-      this.logger.error(
-        `Error al programar sincronización para ${buildingName || `building ${buildingId}`}:`,
-        error,
-      );
-
-      return {
-        success: false,
-        message: `Error al programar sincronización: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        scheduledFor: executionTime.toISOString(),
-        delayMs: 0,
-      };
-    }
+  private formatDate(date: Date): string {
+    return `${date.getFullYear()}/${String(date.getMonth() + 1).padStart(
+      2,
+      '0',
+    )}/${String(date.getDate()).padStart(2, '0')} ${String(
+      date.getHours(),
+    ).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
   }
 }
