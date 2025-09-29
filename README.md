@@ -124,7 +124,7 @@ NODE_ENV=dev
 ```bash
 # Clonar el repositorio
 $ git clone <url-del-repositorio>
-$ cd simco-restaurant-stats
+$ cd simco-stats-api
 
 # Instalar dependencias
 $ pnpm install
