@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: simco-stats-api
+    ports:
+      - "3000:3000"
+    env_file:
+      - ./.env
+    restart: always
+    depends_on:
+      - redis
+
+  redis:
+    image: "redis:alpine"
+    container_name: simco-stats-redis
+    ports:
+      - "6379:6379"
+    restart: always

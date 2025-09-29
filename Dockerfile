@@ -37,8 +37,12 @@ RUN pnpm install --prod
 # Copy built application from the builder stage
 COPY --from=builder /usr/src/app/dist ./dist
 
+# Copy the entrypoint script
+COPY entrypoint.sh .
+RUN chmod +x ./entrypoint.sh
+
 # Expose the port the app runs on
 EXPOSE 3000
 
-# Command to run the application
-CMD ["node", "dist/main"]
+# Set the entrypoint to run the script
+ENTRYPOINT ["./entrypoint.sh"]
