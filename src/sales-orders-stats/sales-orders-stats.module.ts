@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { HttpModule } from '@nestjs/axios';
 
@@ -16,7 +16,7 @@ import { QueueModule } from 'src/queue/queue.module';
     HttpModule,
     AuthModule,
     BuildingModule,
-    QueueModule,
+    forwardRef(() => QueueModule),
   ],
   controllers: [SaleOrdersController],
   providers: [SaleOrdersService, SaleOrdersSchedulerService],
