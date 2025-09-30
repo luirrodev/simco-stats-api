@@ -13,11 +13,12 @@ import config from 'src/config';
       inject: [config.KEY],
       useFactory: (configService: ConfigType<typeof config>) => {
         const redisUrl = configService.redis.url as string;
+        const isProduction = process.env.NODE_ENV === 'prod';
 
         const client = new Redis(redisUrl, {
           maxRetriesPerRequest: null,
           enableReadyCheck: false,
-          tls: { rejectUnauthorized: false },
+          ...(isProduction && { tls: { rejectUnauthorized: false } }),
         });
 
         return {
