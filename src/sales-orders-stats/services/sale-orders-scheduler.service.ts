@@ -1,10 +1,12 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { BuildingService } from 'src/building/services/building.service';
 import { InjectRepository } from '@nestjs/typeorm';
 import { SaleOrderEntity } from '../entities/sale-order.entity';
 import { Repository } from 'typeorm';
 import { QueueService } from 'src/queue/queue.service';
+import { SaleOrderJobData } from 'src/queue/types/sale-order-job-data.type';
+import { DateTime } from 'luxon';
 
 type BuildingData = {
   id: number;
@@ -12,7 +14,7 @@ type BuildingData = {
 };
 
 @Injectable()
-export class SaleOrdersSchedulerService implements OnModuleInit {
+export class SaleOrdersSchedulerService {
   private readonly logger = new Logger(SaleOrdersSchedulerService.name);
   private readonly JOB_NAME = 'sync-building';
 
@@ -22,20 +24,6 @@ export class SaleOrdersSchedulerService implements OnModuleInit {
     private readonly buildingService: BuildingService,
     private readonly queueService: QueueService,
   ) {}
-
-  async onModuleInit() {
-    this.logger.log('SaleOrdersSchedulerService inicializado.');
-    const counts = await this.queueService.getJobCounts();
-    this.logger.log(
-      `Estado inicial de la cola 'sale-orders-sync': ${JSON.stringify(counts)}`,
-    );
-    const { cleaned } = await this.queueService.cleanOldJobs(24 * 7); // Limpia trabajos de más de 7 días
-    if (cleaned > 0) {
-      this.logger.log(
-        `Se han limpiado ${cleaned} trabajos antiguos de la cola.`,
-      );
-    }
-  }
 
   /**
    * Ejecuta la sincronización de sale orders todos los días a las 6:00 AM
@@ -47,7 +35,7 @@ export class SaleOrdersSchedulerService implements OnModuleInit {
     );
     let tasksScheduled = 0;
     const now = new Date();
-    const buildings = await this.buildingService.getSalesOfficeIds();
+    const buildings = await this.buildingService.getSalesOfficeBuildings();
 
     for (const building of buildings) {
       try {
@@ -62,41 +50,37 @@ export class SaleOrdersSchedulerService implements OnModuleInit {
           take: 1,
         });
 
-        if (latestUnresolvedOrder) {
-          const executionTime = new Date(
-            latestUnresolvedOrder.datetime.getTime() +
-              47 * 60 * 60 * 1000 +
-              3 * 60 * 1000,
+        if (!latestUnresolvedOrder) {
+          continue;
+        }
+
+        const executionTime = new Date(
+          latestUnresolvedOrder.datetime.getTime() +
+            47 * 60 * 60 * 1000 +
+            3 * 60 * 1000,
+        );
+
+        if (executionTime.getTime() > now.getTime()) {
+          const delay = executionTime.getTime() - now.getTime();
+          const jobId = `sync-${building.id}-${latestUnresolvedOrder.id}`;
+
+          const jobData: SaleOrderJobData = {
+            buildingId: building.id,
+            buildingName: building.name,
+            saleOrderId: latestUnresolvedOrder.id,
+          };
+
+          await this.queueService.scheduleJob(
+            this.JOB_NAME,
+            jobData,
+            delay,
+            jobId,
           );
 
-          if (executionTime.getTime() > now.getTime()) {
-            const delay = executionTime.getTime() - now.getTime();
-            const jobId = `sync-${building.id}-${latestUnresolvedOrder.id}`;
-
-            await this.queueService.scheduleJob(
-              this.JOB_NAME,
-              {
-                buildingId: building.id,
-                buildingName: building.name,
-                saleOrderId: latestUnresolvedOrder.id,
-              },
-              delay,
-              jobId,
-            );
-
-            tasksScheduled++;
-            this.logScheduledJob(
-              building,
-              latestUnresolvedOrder,
-              executionTime,
-            );
-          } else {
-            this.logSkippedJob(building, latestUnresolvedOrder, executionTime);
-          }
+          tasksScheduled++;
+          this.logScheduledJob(building, latestUnresolvedOrder, executionTime);
         } else {
-          this.logger.debug(
-            `No se encontraron sale orders con más de 24 horas para ${building.name}`,
-          );
+          this.logSkippedJob(building, latestUnresolvedOrder, executionTime);
         }
       } catch (error) {
         this.logger.error(
@@ -108,7 +92,7 @@ export class SaleOrdersSchedulerService implements OnModuleInit {
 
     const buildingText = buildings.length === 1 ? 'building' : 'buildings';
     this.logger.log(
-      `Proceso nocturno completado. Se programaron ${tasksScheduled} tareas específicas de ${buildings.length} ${buildingText}`,
+      `Programacion diaria completada. Se programaron ${tasksScheduled} tareas de ${buildings.length} ${buildingText}`,
     );
   }
 
@@ -138,12 +122,14 @@ export class SaleOrdersSchedulerService implements OnModuleInit {
     );
   }
 
-  private formatDate(date: Date): string {
-    return `${date.getFullYear()}/${String(date.getMonth() + 1).padStart(
-      2,
-      '0',
-    )}/${String(date.getDate()).padStart(2, '0')} ${String(
-      date.getHours(),
-    ).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+  /**
+   * Formatea una fecha en el formato YYYY/MM/DD hh:mm a, ajustada a la zona horaria especificada.
+   * @param date La fecha a formatear (objeto Date desde timestamp with time zone de DB).
+   * @param timeZone Zona horaria IANA. Por defecto: 'America/Havana'.
+   * @returns La fecha formateada como cadena.
+   */
+  private formatDate(date: Date, timeZone: string = 'America/Havana') {
+    const cleanDate = DateTime.fromISO(date.toISOString()).setZone(timeZone);
+    return cleanDate.toFormat('yyyy/MM/dd hh:mm a');
   }
 }

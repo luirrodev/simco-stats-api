@@ -1,6 +1,7 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { Job, JobOptions, Queue } from 'bull';
 import { InjectQueue } from '@nestjs/bull';
+import { SaleOrderJobData } from './types/sale-order-job-data.type';
 
 @Injectable()
 export class QueueService implements OnModuleInit {
@@ -35,11 +36,19 @@ export class QueueService implements OnModuleInit {
     });
   }
 
-  async scheduleJob<T>(
+  /**
+   * Programa un trabajo en la cola con datos específicos para órdenes de venta.
+   * @param name - Nombre del trabajo.
+   * @param data - Datos del trabajo con buildingId, buildingName y saleOrderId.
+   * @param delay - Retraso en milisegundos antes de ejecutar el trabajo.
+   * @param jobId - ID opcional para identificar el trabajo y evitar duplicados.
+   * @returns Promise que resuelve en el trabajo programado.
+   */
+  async scheduleJob(
     name: string,
-    data: T,
+    data: SaleOrderJobData,
     delay: number,
-    jobId?: string,
+    jobId: string,
   ): Promise<Job> {
     const options: JobOptions = {
       delay,
@@ -66,24 +75,6 @@ export class QueueService implements OnModuleInit {
 
   async getJobCounts() {
     return this.syncQueue.getJobCounts();
-  }
-
-  async cleanOldJobs(ageInHours: number) {
-    const jobs = await this.syncQueue.getJobs(['completed', 'failed']);
-    const now = Date.now();
-    let cleaned = 0;
-
-    for (const job of jobs) {
-      if (job.processedOn) {
-        const jobAge = now - job.processedOn;
-        if (jobAge > ageInHours * 60 * 60 * 1000) {
-          await job.remove();
-          cleaned++;
-        }
-      }
-    }
-
-    return { cleaned, total: jobs.length };
   }
 
   /**
