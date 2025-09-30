@@ -2,7 +2,6 @@ import { DataSource } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
 import { config } from 'dotenv';
 
-// eslint-disable-next-line @typescript-eslint/no-unsafe-call
 config();
 
 const configService = new ConfigService();
