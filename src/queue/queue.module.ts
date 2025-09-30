@@ -4,6 +4,7 @@ import { BullModule } from '@nestjs/bull';
 import Redis from 'ioredis';
 
 import { QueueService } from './queue.service';
+import { QueueController } from './queue.controller';
 
 import config from 'src/config';
 
@@ -39,6 +40,7 @@ import config from 'src/config';
       name: 'sale-orders-sync',
     }),
   ],
+  controllers: [QueueController],
   providers: [QueueService],
   exports: [BullModule, QueueService],
 })

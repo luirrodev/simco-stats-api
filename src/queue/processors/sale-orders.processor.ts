@@ -45,7 +45,7 @@ export class SaleOrdersProcessor {
         `Error en la sincronización para ${buildingName || `building ${buildingId}`}:`,
         error,
       );
-      throw error; // Bull manejará los reintentos
+      throw error;
     }
   }
 }
