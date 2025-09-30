@@ -1,7 +1,6 @@
-# Stage 1: Build the application
-FROM node:22-alpine AS builder
+# Stage 1: Base image for dependencies
+FROM node:22-alpine AS deps
 
-# Set working directory
 WORKDIR /usr/src/app
 
 # Install pnpm
@@ -10,39 +9,34 @@ RUN npm install -g pnpm
 # Copy dependency definition files
 COPY package.json pnpm-lock.yaml ./
 
-# Install ALL dependencies (including devDependencies for building)
+# Install ALL dependencies (including devDependencies)
 RUN pnpm install
 
-# Copy the rest of the application source code
+# Stage 2: Builder for production
+FROM deps AS builder
+WORKDIR /usr/src/app
 COPY . .
-
-# Build the application
 RUN pnpm run build
 
-# Stage 2: Create the production image
+# Stage 3: Production Image
 FROM node:22-alpine AS production
-
-# Set working directory
 WORKDIR /usr/src/app
 
-# Install pnpm
+# Establecer NODE_ENV para producción
+ENV NODE_ENV=prod
+
 RUN npm install -g pnpm
-
-# Copy dependency definition files for production
 COPY package.json pnpm-lock.yaml ./
-
-# Install ONLY production dependencies
 RUN pnpm install --prod
-
-# Copy built application from the builder stage
 COPY --from=builder /usr/src/app/dist ./dist
-
-# Copy the entrypoint script
 COPY entrypoint.sh .
 RUN chmod +x ./entrypoint.sh
-
-# Expose the port the app runs on
 EXPOSE 3000
-
-# Set the entrypoint to run the script
 ENTRYPOINT ["./entrypoint.sh"]
+
+# Stage 4: Development Image
+FROM deps AS development
+WORKDIR /usr/src/app
+COPY . .
+EXPOSE 3000
+CMD ["npm", "run", "start:dev"]

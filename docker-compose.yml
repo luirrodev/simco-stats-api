@@ -1,15 +1,21 @@
-version: '3.8'
+version: "3.8"
 
 services:
   api:
     build:
       context: .
       dockerfile: Dockerfile
+      target: development
     container_name: simco-stats-api
     ports:
       - "3000:3000"
     env_file:
       - ./.env
+    environment:
+      - NODE_ENV=dev
+    volumes:
+      - .:/usr/src/app
+      - /usr/src/app/node_modules
     restart: always
     depends_on:
       - redis
