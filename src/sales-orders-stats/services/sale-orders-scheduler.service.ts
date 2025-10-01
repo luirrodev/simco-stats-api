@@ -7,6 +7,7 @@ import { Repository } from 'typeorm';
 import { QueueService } from 'src/queue/queue.service';
 import { SaleOrderJobData } from 'src/queue/types/sale-order-job-data.type';
 import { DateTime } from 'luxon';
+import { SaleOrdersService } from '../services/sale-orders.service';
 
 type BuildingData = {
   id: number;
@@ -23,6 +24,7 @@ export class SaleOrdersSchedulerService {
     private readonly saleOrderRepository: Repository<SaleOrderEntity>,
     private readonly buildingService: BuildingService,
     private readonly queueService: QueueService,
+    private readonly saleOrdersService: SaleOrdersService,
   ) {}
 
   /**
@@ -38,6 +40,8 @@ export class SaleOrdersSchedulerService {
     const buildings = await this.buildingService.getSalesOfficeBuildings();
 
     for (const building of buildings) {
+      await this.saleOrdersService.syncSaleOrdersFromAPI(building.id);
+
       try {
         const [latestUnresolvedOrder] = await this.saleOrderRepository.find({
           where: {
