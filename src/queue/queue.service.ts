@@ -2,6 +2,7 @@ import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { Job, JobOptions, Queue } from 'bull';
 import { InjectQueue } from '@nestjs/bull';
 import { SaleOrderJobData } from './types/sale-order-job-data.type';
+import { DateTime } from 'luxon';
 
 @Injectable()
 export class QueueService implements OnModuleInit {
@@ -78,6 +79,18 @@ export class QueueService implements OnModuleInit {
   }
 
   /**
+   * Formatea el tiempo restante en formato legible (ej. '2 H 30 M 45 S').
+   * @param ms - Tiempo en milisegundos.
+   * @returns Cadena formateada del tiempo.
+   */
+  private formatRemainingTime(ms: number): string {
+    const hours = Math.floor(ms / 3600000);
+    const minutes = Math.floor((ms % 3600000) / 60000);
+    const seconds = Math.floor((ms % 60000) / 1000);
+    return `${hours} H ${minutes} M ${seconds} S`;
+  }
+
+  /**
    * Obtiene todos los trabajos de la cola agrupados por estado
    * @returns Objeto con trabajos agrupados por estado
    */
@@ -105,11 +118,13 @@ export class QueueService implements OnModuleInit {
           jobId: job.opts.jobId,
         },
         timing: {
-          createdAt: new Date(job.timestamp).toISOString(),
-          willExecuteAt: new Date(processAt).toISOString(),
-          remainingMs: remainingTime,
-          remainingMinutes: Math.floor(remainingTime / 60000),
-          remainingHours: Math.floor(remainingTime / 3600000),
+          createdAt: DateTime.fromJSDate(new Date(job.timestamp))
+            .setZone('America/Havana')
+            .toISO(),
+          willExecuteAt: DateTime.fromJSDate(new Date(processAt))
+            .setZone('America/Havana')
+            .toISO(),
+          remainingTimeFormatted: this.formatRemainingTime(remainingTime),
         },
         timestamp: job.timestamp,
         processedOn: job.processedOn,
