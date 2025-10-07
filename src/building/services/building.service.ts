@@ -3,6 +3,7 @@ import {
   BadGatewayException,
   ServiceUnavailableException,
   HttpException,
+  NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -33,12 +34,28 @@ export class BuildingService {
   }
 
   /**
-   * Obtiene un edificio por su ID
+   * Obtiene un edificio por su ID con estadísticas de órdenes opcionales
    * @param id - ID del edificio
-   * @returns Promise con el edificio encontrado o null
+   * @param statsOrders - Número de días para obtener estadísticas de órdenes (opcional)
+   * @returns Promise con el edificio encontrado y estadísticas si se solicitan
    */
-  public async getBuildingById(id: number): Promise<BuildingEntity | null> {
-    return await this.buildingRepository.findOne({ where: { id } });
+  public async getBuildingById(
+    id: number,
+    statsOrders?: number,
+  ): Promise<BuildingEntity> {
+    const building = await this.buildingRepository.findOne({
+      where: { id },
+      relations: statsOrders ? ['saleOrdersStats'] : [],
+    });
+
+    if (!building) {
+      throw new NotFoundException({
+        message: 'Building not found',
+        details: `No building found with ID ${id}`,
+      });
+    }
+
+    return building;
   }
 
   /**
@@ -66,23 +83,6 @@ export class BuildingService {
         id: building.id,
         name: building.name,
       }));
-  }
-
-  /**
-   * Obtiene un edificio específico por su ID con sus estadísticas relacionadas
-   * @param id - ID del edificio
-   * @returns Promise con el edificio encontrado o null
-   */
-  public async getBuildingByIdWithStats(
-    id: number,
-  ): Promise<BuildingEntity | null> {
-    return await this.buildingRepository.findOne({
-      where: { id },
-      relations: ['restaurantStats'],
-      order: {
-        restaurantStats: { datetime: 'DESC' },
-      },
-    });
   }
 
   /**

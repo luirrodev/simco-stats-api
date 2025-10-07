@@ -7,6 +7,8 @@ import {
 } from 'typeorm';
 
 import { RestaurantStatEntity } from '../../restaurant-stats/entities/restaurant-stat.entity';
+import { SaleOrderEntity } from '../../sales-orders-stats/entities/sale-order.entity';
+import { Exclude } from 'class-transformer';
 
 @Entity('buildings')
 export class BuildingEntity {
@@ -28,6 +30,7 @@ export class BuildingEntity {
   @Column({ type: 'int', nullable: true })
   cost?: number;
 
+  @Exclude()
   @UpdateDateColumn()
   updatedAt?: Date;
 
@@ -36,4 +39,7 @@ export class BuildingEntity {
     (restaurantStat) => restaurantStat.building,
   )
   restaurantStats?: RestaurantStatEntity[];
+
+  @OneToMany(() => SaleOrderEntity, (saleOrder) => saleOrder.building)
+  saleOrdersStats?: SaleOrderEntity[];
 }

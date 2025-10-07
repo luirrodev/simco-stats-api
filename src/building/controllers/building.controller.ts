@@ -4,8 +4,8 @@ import {
   Post,
   Param,
   ParseIntPipe,
-  NotFoundException,
   HttpException,
+  Query,
 } from '@nestjs/common';
 import { BuildingService } from '../services/building.service';
 
@@ -37,13 +37,11 @@ export class BuildingController {
   }
 
   @Get(':id')
-  async getBuildingById(@Param('id', ParseIntPipe) id: number) {
-    const building = await this.buildingService.getBuildingByIdWithStats(id);
-
-    if (!building) {
-      throw new NotFoundException(`Edificio con ID ${id} no encontrado`);
-    }
-
-    return building;
+  async getBuildingById(
+    @Param('id', ParseIntPipe) id: number,
+    @Query('statsOrders', new ParseIntPipe({ optional: true }))
+    statsOrders?: number,
+  ) {
+    return await this.buildingService.getBuildingById(id, statsOrders);
   }
 }
