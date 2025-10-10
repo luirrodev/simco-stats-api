@@ -8,6 +8,7 @@ import { AxiosError } from 'axios';
 import { SaleOrderEntity } from '../entities/sale-order.entity';
 import { AuthService } from '../../auth/services/auth.service';
 import { SaleOrdersDto } from '../dtos/sales-orders.dtos';
+import { BuildingService } from '../../building/services/building.service';
 
 interface SyncResult {
   success: boolean;
@@ -31,6 +32,7 @@ export class SaleOrdersService {
   constructor(
     @InjectRepository(SaleOrderEntity)
     private readonly saleOrderRepository: Repository<SaleOrderEntity>,
+    private readonly buildingService: BuildingService,
     private readonly httpService: HttpService,
     private readonly authService: AuthService,
   ) {}
@@ -125,8 +127,15 @@ export class SaleOrdersService {
     const { page = 1, pageSize = 10 } = options;
     const skip = (page - 1) * pageSize;
 
+    if (options.buildingId) {
+      const building = await this.buildingService.getBuildingById(
+        options.buildingId,
+      );
+      whereClause = { building: { id: building.id } };
+    }
+
     if (typeof options.includeResolved !== 'undefined') {
-      whereClause = { resolved: options.includeResolved };
+      whereClause = { ...whereClause, resolved: options.includeResolved };
     }
 
     // Obtener el total de registros

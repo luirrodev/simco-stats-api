@@ -1,15 +1,17 @@
-import { IsBoolean, IsOptional, IsPositive } from 'class-validator';
+import { IsBoolean, IsOptional, IsNumber, IsPositive } from 'class-validator';
 import { Transform } from 'class-transformer';
 
 export class SaleOrdersDto {
   @IsOptional()
-  @Transform(({ value }: { value: string }) => parseInt(value, 10))
+  @IsNumber()
   @IsPositive()
+  @Transform(({ value }: { value: string }) => parseInt(value, 10))
   page: number;
 
   @IsOptional()
-  @Transform(({ value }: { value: string }) => parseInt(value, 10))
+  @IsNumber()
   @IsPositive()
+  @Transform(({ value }: { value: string }) => parseInt(value, 10))
   pageSize: number;
 
   @IsOptional()
@@ -18,4 +20,10 @@ export class SaleOrdersDto {
     value === 'true' ? true : false,
   )
   includeResolved: boolean;
+
+  @IsOptional()
+  @IsNumber()
+  @IsPositive()
+  @Transform(({ value }: { value: string }) => parseInt(value, 10))
+  buildingId: number;
 }
