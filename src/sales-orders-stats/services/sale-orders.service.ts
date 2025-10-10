@@ -157,60 +157,6 @@ export class SaleOrdersService {
   }
 
   /**
-   * Obtiene sale orders resueltas
-   * @param limit - Límite de registros a retornar (opcional)
-   * @returns Promise con las sale orders resueltas
-   */
-  public async getResolvedSaleOrders(
-    limit?: number,
-  ): Promise<SaleOrderEntity[]> {
-    const query = this.saleOrderRepository
-      .createQueryBuilder('saleOrder')
-      .where('saleOrder.resolved = :resolved', { resolved: true })
-      .orderBy('saleOrder.datetime', 'DESC');
-
-    if (limit) {
-      query.take(limit);
-    }
-
-    return await query.getMany();
-  }
-
-  /**
-   * Obtiene sale orders pendientes (no resueltas)
-   * @param limit - Límite de registros a retornar (opcional)
-   * @returns Promise con las sale orders pendientes
-   */
-  public async getPendingSaleOrders(
-    limit?: number,
-  ): Promise<SaleOrderEntity[]> {
-    const query = this.saleOrderRepository
-      .createQueryBuilder('saleOrder')
-      .where('saleOrder.resolved = :resolved', { resolved: false })
-      .orderBy('saleOrder.datetime', 'DESC');
-
-    if (limit) {
-      query.take(limit);
-    }
-
-    return await query.getMany();
-  }
-
-  /**
-   * Actualiza el estado de resolved de una sale order
-   * @param id - ID de la sale order
-   * @param resolved - Nuevo estado resolved
-   * @returns Promise con la sale order actualizada
-   */
-  public async updateResolvedStatus(
-    id: number,
-    resolved: boolean,
-  ): Promise<SaleOrderEntity | null> {
-    await this.saleOrderRepository.update(id, { resolved });
-    return await this.getSaleOrderById(id);
-  }
-
-  /**
    * Sincroniza las sale orders desde la API con la base de datos
    * @param buildingId - ID del edificio de la oficina de ventas
    * @returns Promise con el resultado de la sincronización
@@ -306,29 +252,6 @@ export class SaleOrdersService {
       totalCount,
       results,
     };
-  }
-
-  /**
-   * Obtiene sale orders por building ID
-   * @param buildingId - ID del edificio
-   * @param limit - Límite de registros a retornar (opcional)
-   * @returns Promise con las sale orders del edificio
-   */
-  public async getSaleOrdersByBuilding(
-    buildingId: number,
-    limit?: number,
-  ): Promise<SaleOrderEntity[]> {
-    const query = this.saleOrderRepository
-      .createQueryBuilder('saleOrder')
-      .leftJoinAndSelect('saleOrder.building', 'building')
-      .where('building.id = :buildingId', { buildingId })
-      .orderBy('saleOrder.datetime', 'DESC');
-
-    if (limit) {
-      query.take(limit);
-    }
-
-    return await query.getMany();
   }
 
   /**

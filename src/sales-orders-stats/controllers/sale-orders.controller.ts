@@ -48,6 +48,16 @@ export class SaleOrdersController {
   }
 
   /**
+   * Obtiene el promedio de precios por recurso en una fecha específica
+   * @param date - Fecha en formato YYYY-MM-DD
+   * @returns Promise con el promedio de precios por recurso
+   */
+  @Get('analytics/prices/:date')
+  async getAveragePricesByDate(@Param('date') date: string) {
+    return await this.saleOrdersService.getAveragePricesByDate(date);
+  }
+
+  /**
    * Sincroniza las sale orders de un edificio específico con la base de datos
    * @param buildingId - ID del edificio de la oficina de ventas
    * @returns Promise con el resultado de la sincronización
@@ -82,97 +92,25 @@ export class SaleOrdersController {
     return await this.saleOrdersService.syncAllSaleOrdersFromAPI(buildingIds);
   }
 
-  // /**
-  //  * Obtiene las sale orders resueltas
-  //  * @param limit - Límite de registros a retornar (opcional)
-  //  * @returns Promise con las sale orders resueltas
-  //  */
-  // @Get('status/resolved')
-  // async getResolvedSaleOrders(@Query('limit', ParseIntPipe) limit?: number) {
-  //   return await this.saleOrdersService.getResolvedSaleOrders(limit);
-  // }
+  /**
+   * Ejecuta manualmente el proceso de sincronización diaria y programación de tareas
+   */
+  @Post('execute-daily-sync')
+  async executeDailySyncManually() {
+    try {
+      await this.saleOrdersSchedulerService.handleDailySyncSaleOrders();
 
-  // /**
-  //  * @param limit - Límite de registros a retornar (opcional)
-  //  * @returns Promise con las sale orders pendientes
-  //  */
-  // @Get('status/pending')
-  // @ApiOperation({ summary: 'Obtener todas las órdenes de venta pendientes' })
-  // @ApiResponse({
-  //   status: 200,
-  //   description: 'Lista de órdenes de venta pendientes obtenida correctamente',
-  // })
-  // @ApiQuery({
-  //   name: 'limit',
-  //   required: false,
-  //   type: Number,
-  //   description:
-  //     'Límite de registros a devolver (obsoleto, usar page y pageSize en su lugar)',
-  // })
-  // @ApiQuery({
-  //   name: 'page',
-  //   required: false,
-  //   type: Number,
-  //   description: 'Número de página (comenzando en 1)',
-  //   example: 1,
-  // })
-  // @ApiQuery({
-  //   name: 'pageSize',
-  //   required: false,
-  //   type: Number,
-  //   description: 'Tamaño de cada página',
-  //   example: 10,
-  // })
-  // async getPendingSaleOrders(
-  //   @Query('limit', new ParseIntPipe({ optional: true })) limit?: number,
-  //   @Query('page', new ParseIntPipe({ optional: true })) page: number = 1,
-  //   @Query('pageSize', new ParseIntPipe({ optional: true }))
-  //   pageSize: number = 10,
-  // ) {
-  //   return await this.saleOrdersService.getPendingSaleOrders({
-  //     limit,
-  //     page,
-  //     pageSize,
-  //   });
-  // }
-
-  // /**
-  //  * Obtiene estadísticas básicas de sale orders
-  //  * @returns Promise con las estadísticas
-  // @Get('analytics/stats')
-  // async getSaleOrdersStats() {
-  //   return await this.saleOrdersService.getSaleOrdersStats();
-  // }
-
-  // /**
-  //  * Obtiene el promedio de precios por recurso en una fecha específica
-  //  * @param date - Fecha en formato YYYY-MM-DD
-  //  * @returns Promise con el promedio de precios por recurso
-  //  */
-  // @Get('analytics/prices/:date')
-  // async getAveragePricesByDate(@Param('date') date: string) {
-  //   return await this.saleOrdersService.getAveragePricesByDate(date);
-  // }
-
-  // /**
-  //  * Ejecuta manualmente el proceso de sincronización diaria y programación de tareas
-  //  */
-  // @Post('execute-daily-sync')
-  // async executeDailySyncManually() {
-  //   try {
-  //     await this.saleOrdersSchedulerService.handleDailySyncSaleOrders();
-
-  //     return {
-  //       success: true,
-  //       message: 'Proceso de sincronización diaria ejecutado correctamente',
-  //       executedAt: new Date().toISOString(),
-  //     };
-  //   } catch (error) {
-  //     return {
-  //       success: false,
-  //       message: `Error al ejecutar sincronización diaria: ${error instanceof Error ? error.message : 'Unknown error'}`,
-  //       executedAt: new Date().toISOString(),
-  //     };
-  //   }
-  // }
+      return {
+        success: true,
+        message: 'Proceso de sincronización diaria ejecutado correctamente',
+        executedAt: new Date().toISOString(),
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: `Error al ejecutar sincronización diaria: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        executedAt: new Date().toISOString(),
+      };
+    }
+  }
 }
