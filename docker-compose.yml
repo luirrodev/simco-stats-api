@@ -9,6 +9,7 @@ services:
     container_name: simco-stats-api
     ports:
       - "3000:3000"
+      - "9229:9229"
     env_file:
       - ./.env
     environment:
