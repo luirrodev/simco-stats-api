@@ -7,6 +7,7 @@ import { AxiosError } from 'axios';
 
 import { SaleOrderEntity } from '../entities/sale-order.entity';
 import { AuthService } from '../../auth/services/auth.service';
+import { SaleOrdersDto } from '../dtos/sales-orders.dtos';
 
 interface SyncResult {
   success: boolean;
@@ -113,20 +114,46 @@ export class SaleOrdersService {
   }
 
   /**
-   * Obtiene todas las sale orders ordenadas por fecha descendente
-   * @param limit - Límite de registros a retornar (opcional)
-   * @returns Promise con las sale orders
+   * Obtiene las sale orders paginadas
+   * @param options - Opciones de paginación
+   * @param options.page - Número de página (comenzando en 1)
+   * @param options.pageSize - Cantidad de registros por página
+   * @returns Promise con las sale orders paginadas y metadatos de paginación
    */
-  public async getAllSaleOrders(limit?: number): Promise<SaleOrderEntity[]> {
-    const query = this.saleOrderRepository
-      .createQueryBuilder('saleOrder')
-      .orderBy('saleOrder.datetime', 'DESC');
+  public async getAllSaleOrders(options: SaleOrdersDto) {
+    let whereClause = {};
+    const { page = 1, pageSize = 10 } = options;
+    const skip = (page - 1) * pageSize;
 
-    if (limit) {
-      query.take(limit);
+    if (typeof options.includeResolved !== 'undefined') {
+      whereClause = { resolved: options.includeResolved };
     }
 
-    return await query.getMany();
+    // Obtener el total de registros
+    const total = await this.saleOrderRepository.count({
+      where: whereClause,
+    });
+
+    // Calcular el total de páginas
+    const totalPages = Math.ceil(total / pageSize);
+
+    // Obtener los registros paginados
+    const data = await this.saleOrderRepository.find({
+      skip,
+      take: pageSize,
+      where: whereClause,
+      order: {
+        datetime: 'DESC',
+      },
+    });
+
+    return {
+      data,
+      page,
+      pageSize,
+      total,
+      totalPages,
+    };
   }
 
   /**
