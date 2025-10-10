@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Between, Repository } from 'typeorm';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 import { AxiosError } from 'axios';
@@ -136,6 +136,16 @@ export class SaleOrdersService {
 
     if (typeof options.includeResolved !== 'undefined') {
       whereClause = { ...whereClause, resolved: options.includeResolved };
+    }
+
+    if (options.dateIni && options.dateEnd) {
+      const dateIni = new Date(options.dateIni.getTime() - 47 * 60 * 60 * 1000);
+      const dateEnd = new Date(options.dateEnd.getTime() - 47 * 60 * 60 * 1000);
+
+      whereClause = {
+        ...whereClause,
+        datetime: Between(dateIni, dateEnd),
+      };
     }
 
     // Obtener el total de registros
