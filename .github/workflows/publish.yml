@@ -20,10 +20,13 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GHCR_TOKEN }}
 
-      - name: Build image
+      - name: Build production image
         run: |
-          docker build . --tag ghcr.io/luirrodev/simco-stats-api:latest
-          docker push ghcr.io/luirrodev/simco-stats-api:latest
+          IMAGE=ghcr.io/luirrodev/simco-stats-api:latest
+          echo "Building production image using --target production..."
+          docker build --target production . --tag $IMAGE
+          echo "Pushing $IMAGE to registry..."
+          docker push $IMAGE
 
       - name: Deploy to Render
         if: success() && github.ref == 'refs/heads/main'
