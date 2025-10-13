@@ -8,6 +8,7 @@ import {
   JoinColumn,
 } from 'typeorm';
 import { BuildingEntity } from '../../building/entities/building.entity';
+import { Exclude } from 'class-transformer';
 
 @Entity('sale_orders')
 export class SaleOrderEntity {
@@ -38,9 +39,11 @@ export class SaleOrderEntity {
   @Column({ type: 'boolean', default: false })
   resolved: boolean;
 
+  @Exclude()
   @CreateDateColumn()
   createdAt: Date;
 
+  @Exclude()
   @UpdateDateColumn()
   updatedAt: Date;
 }
