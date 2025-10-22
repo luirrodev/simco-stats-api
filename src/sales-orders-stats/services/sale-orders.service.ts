@@ -7,8 +7,9 @@ import { AxiosError } from 'axios';
 
 import { SaleOrderEntity } from '../entities/sale-order.entity';
 import { AuthService } from '../../auth/services/auth.service';
-import { SaleOrdersDto } from '../dtos/sales-orders.dtos';
+import { GetAllSaleOrdersDto } from '../dtos/sales-orders.dtos';
 import { BuildingService } from '../../building/services/building.service';
+import { Resource } from '../entities/sale-order.entity';
 
 interface SyncResult {
   success: boolean;
@@ -25,6 +26,16 @@ export interface ResourceAnalysis {
   total_amount: number;
   min_price: string;
   max_price: string;
+}
+
+export interface ResourceStats {
+  resourceKind: number;
+  totalAmount: number;
+  totalOrders: number;
+  averageAmount: number;
+  averagePrice: number;
+  minPrice: number;
+  maxPrice: number;
 }
 
 @Injectable()
@@ -117,12 +128,12 @@ export class SaleOrdersService {
 
   /**
    * Obtiene las sale orders paginadas
-   * @param options - Opciones de paginación
+   * @param options - Opciones de paginación y filtrado
    * @param options.page - Número de página (comenzando en 1)
    * @param options.pageSize - Cantidad de registros por página
    * @returns Promise con las sale orders paginadas y metadatos de paginación
    */
-  public async getAllSaleOrders(options: SaleOrdersDto) {
+  public async getAllSaleOrders(options: GetAllSaleOrdersDto) {
     let whereClause = {};
     const { page = 1, pageSize = 10 } = options;
     const skip = (page - 1) * pageSize;
@@ -274,25 +285,6 @@ export class SaleOrdersService {
   }
 
   /**
-   * Obtiene estadísticas de sale orders
-   * @returns Promise con estadísticas básicas
-   */
-  public async getSaleOrdersStats() {
-    const [total, resolved, pending] = await Promise.all([
-      this.saleOrderRepository.count(),
-      this.saleOrderRepository.count({ where: { resolved: true } }),
-      this.saleOrderRepository.count({ where: { resolved: false } }),
-    ]);
-
-    return {
-      total,
-      resolved,
-      pending,
-      resolvedPercentage: total > 0 ? (resolved / total) * 100 : 0,
-    };
-  }
-
-  /**
    * Obtiene el promedio de precios por recurso en una fecha específica
    * @param date - Fecha en formato YYYY-MM-DD (fecha de resolución real)
    * @returns Promise con el promedio de precios por recurso incluyendo bono de calidad
@@ -342,6 +334,143 @@ export class SaleOrdersService {
       date,
       total_sale_orders_analyzed: totalSaleOrdersAnalyzed,
       resources: resourceData,
+    };
+  }
+
+  /**
+   * Obtiene estadísticas de órdenes de venta para una fecha o un rango de fechas
+   * @param dateIni - Fecha de inicio del rango
+   * @param dateEnd - Fecha de fin del rango (opcional, si no se proporciona se usa dateIni)
+   * @param buildingId - ID del edificio (opcional)
+   * @returns Estadísticas de las órdenes de venta incluyendo artículos vendidos por tipo
+   */
+  public async getSaleOrdersStatsByDate(
+    dateIni: Date,
+    dateEnd?: Date,
+    buildingId?: number,
+  ) {
+    // Si no se proporciona dateEnd, usar dateIni como rango de un día
+    const endDate = dateEnd || new Date(dateIni);
+    endDate.setHours(23, 59, 59, 999);
+
+    // Objeto para almacenar todas las órdenes
+    const allOrders: SaleOrderEntity[] = [];
+    let currentPage = 1;
+    const pageSize = 100; // Tamaño de página para procesar en lotes
+    let hasMorePages = true;
+
+    // Obtener todas las órdenes usando paginación
+    while (hasMorePages) {
+      const result = await this.getAllSaleOrders({
+        dateIni,
+        dateEnd: endDate,
+        buildingId,
+        page: currentPage,
+        pageSize,
+        includeResolved: true,
+      });
+
+      allOrders.push(...result.data);
+      hasMorePages = currentPage < result.totalPages;
+      currentPage++;
+    }
+
+    // Calcular estadísticas generales
+    const totalOrders = allOrders.length;
+    const totalSearchCost = allOrders.reduce(
+      (acc, order) => acc + order.searchCost,
+      0,
+    );
+    const averageSearchCost =
+      totalOrders > 0 ? totalSearchCost / totalOrders : 0;
+
+    // Agrupar y contar artículos por tipo de recurso
+    const resourceStats = new Map<
+      number,
+      {
+        resourceKind: number;
+        totalAmount: number;
+        totalOrders: number;
+        averageAmount: number;
+        totalPrice: number;
+        averagePrice: number;
+        minPrice: number;
+        maxPrice: number;
+        orderIds: Set<number>; // Para rastrear órdenes únicas por recurso
+      }
+    >();
+
+    allOrders.forEach((order) => {
+      if (order.resources && Array.isArray(order.resources)) {
+        order.resources.forEach((resource: Resource) => {
+          const kind = resource.kind;
+          const amount = resource.amount || 0;
+          const price = resource.price || 0;
+
+          if (resourceStats.has(kind)) {
+            // Si el recurso ya existe, actualizar las estadísticas
+            const stats = resourceStats.get(kind)!;
+            stats.totalAmount += amount;
+
+            // Actualizar estadísticas de precio
+            stats.totalPrice += price;
+            stats.minPrice = Math.min(stats.minPrice, price);
+            stats.maxPrice = Math.max(stats.maxPrice, price);
+
+            // Solo contar la orden si es la primera vez que la vemos para este recurso
+            if (!stats.orderIds.has(order.id)) {
+              stats.orderIds.add(order.id);
+              stats.totalOrders += 1;
+            }
+
+            // Recalcular promedios
+            stats.averageAmount = stats.totalAmount / stats.totalOrders;
+            stats.averagePrice = stats.totalPrice / stats.totalOrders;
+          } else {
+            // Si es la primera vez que vemos este recurso, crearlo
+            const orderIds = new Set<number>();
+            orderIds.add(order.id);
+
+            resourceStats.set(kind, {
+              resourceKind: kind,
+              totalAmount: amount,
+              totalOrders: 1,
+              averageAmount: amount,
+              totalPrice: price,
+              averagePrice: price,
+              minPrice: price,
+              maxPrice: price,
+              orderIds,
+            });
+          }
+        });
+      }
+    });
+
+    // Convertir el Map a un array ordenado por resourceKind y formatear los valores
+    const resourcesSold: ResourceStats[] = Array.from(resourceStats.values())
+      .map((stats) => ({
+        resourceKind: stats.resourceKind,
+        totalAmount: stats.totalAmount,
+        totalOrders: stats.totalOrders,
+        averageAmount: parseFloat(stats.averageAmount.toFixed(2)),
+        averagePrice: parseFloat(stats.averagePrice.toFixed(2)),
+        minPrice: parseFloat(stats.minPrice.toFixed(2)),
+        maxPrice: parseFloat(stats.maxPrice.toFixed(2)),
+      }))
+      .sort((a, b) => a.resourceKind - b.resourceKind);
+
+    return {
+      dateRange: {
+        start: dateIni.toISOString().split('T')[0],
+        end: endDate.toISOString().split('T')[0],
+      },
+      buildingId: buildingId || null,
+      totalOrders,
+      totalResolvedOrders: allOrders.filter((o) => o.resolved).length,
+      averageSearchCost: parseFloat(averageSearchCost.toFixed(2)),
+      totalSearchCost: parseFloat(totalSearchCost.toFixed(2)),
+      resourcesSold,
     };
   }
 }

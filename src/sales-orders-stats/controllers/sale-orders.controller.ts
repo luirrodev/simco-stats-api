@@ -9,7 +9,10 @@ import {
 import { SaleOrdersService } from '../services/sale-orders.service';
 import { BuildingService } from '../../building/services/building.service';
 import { SaleOrdersSchedulerService } from '../services/sale-orders-scheduler.service';
-import { SaleOrdersDto } from '../dtos/sales-orders.dtos';
+import {
+  GetAllSaleOrdersDto,
+  SaleOrdersStatsDto,
+} from '../dtos/sales-orders.dtos';
 
 export interface SyncResult {
   success: boolean;
@@ -28,23 +31,27 @@ export class SaleOrdersController {
 
   /**
    * Obtiene todas las sale orders con paginación
-   * @param page - Número de página (comenzando en 1)
-   * @param pageSize - Cantidad de registros por página
+   * @param params - Parámetros de consulta (page, pageSize, filtros)
    * @returns Promise con las sale orders paginadas
    */
   @Get()
-  async getAllSaleOrders(@Query() params: SaleOrdersDto) {
+  async getAllSaleOrders(@Query() params: GetAllSaleOrdersDto) {
     return await this.saleOrdersService.getAllSaleOrders(params);
   }
 
   /**
-   * Obtiene una sale order específica por su ID
-   * @param id - ID de la sale order
-   * @returns Promise con la sale order
+   * Obtiene estadísticas de órdenes de venta y recursos vendidos por tipo
+   * Soporta una fecha específica o un rango de fechas
+   * @param params - Parámetros de consulta (dateIni requerido, dateEnd y buildingId opcionales)
+   * @returns Promise con estadísticas de órdenes y recursos vendidos
    */
-  @Get(':id')
-  async getSaleOrderById(@Param('id', ParseIntPipe) id: number) {
-    return await this.saleOrdersService.getSaleOrderById(id);
+  @Get('stats')
+  async getSaleOrdersStatsByDate(@Query() params: SaleOrdersStatsDto) {
+    return await this.saleOrdersService.getSaleOrdersStatsByDate(
+      params.dateIni,
+      params.dateEnd,
+      params.buildingId,
+    );
   }
 
   /**
@@ -55,6 +62,16 @@ export class SaleOrdersController {
   @Get('analytics/prices/:date')
   async getAveragePricesByDate(@Param('date') date: string) {
     return await this.saleOrdersService.getAveragePricesByDate(date);
+  }
+
+  /**
+   * Obtiene una sale order específica por su ID
+   * @param id - ID de la sale order
+   * @returns Promise con la sale order
+   */
+  @Get(':id')
+  async getSaleOrderById(@Param('id', ParseIntPipe) id: number) {
+    return await this.saleOrdersService.getSaleOrderById(id);
   }
 
   /**
