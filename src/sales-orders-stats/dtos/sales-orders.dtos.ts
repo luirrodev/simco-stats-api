@@ -45,7 +45,8 @@ export class BaseSaleOrdersFilterDto {
   })
   @Transform(({ value }) => {
     if (!value) return null;
-    const date = new Date(value as string);
+    // Interpretar la fecha como hora local añadiendo 'T00:00:00'
+    const date = new Date(value + 'T00:00:00');
     return isNaN(date.getTime()) ? null : date;
   })
   dateIni?: Date;
@@ -61,7 +62,8 @@ export class BaseSaleOrdersFilterDto {
   })
   @Transform(({ value }) => {
     if (!value) return null;
-    const date = new Date(value as string);
+    // Interpretar la fecha como hora local añadiendo 'T00:00:00'
+    const date = new Date(value + 'T00:00:00');
     return isNaN(date.getTime()) ? null : date;
   })
   dateEnd?: Date;
@@ -103,7 +105,8 @@ export class SaleOrdersStatsDto {
   })
   @Transform(({ value }) => {
     if (!value) return null;
-    const date = new Date(value as string);
+    // Interpretar la fecha como hora local añadiendo 'T00:00:00'
+    const date = new Date(value + 'T00:00:00');
     return isNaN(date.getTime()) ? null : date;
   })
   dateIni: Date;
@@ -114,7 +117,8 @@ export class SaleOrdersStatsDto {
   })
   @Transform(({ value }) => {
     if (!value) return null;
-    const date = new Date(value as string);
+    // Interpretar la fecha como hora local añadiendo 'T00:00:00'
+    const date = new Date(value + 'T00:00:00');
     return isNaN(date.getTime()) ? null : date;
   })
   dateEnd?: Date;

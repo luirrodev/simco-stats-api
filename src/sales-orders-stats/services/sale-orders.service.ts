@@ -149,9 +149,14 @@ export class SaleOrdersService {
       whereClause = { ...whereClause, resolved: options.includeResolved };
     }
 
-    if (options.dateIni && options.dateEnd) {
-      const dateIni = new Date(options.dateIni.getTime() - 47 * 60 * 60 * 1000);
-      const dateEnd = new Date(options.dateEnd.getTime() - 47 * 60 * 60 * 1000);
+    if (options.dateIni || options.dateEnd) {
+      const dateIni = options.dateIni
+        ? new Date(options.dateIni.getTime() - 47 * 60 * 60 * 1000)
+        : new Date(0); // Fecha muy antigua si no se especifica inicio
+
+      const dateEnd = options.dateEnd
+        ? new Date(options.dateEnd.getTime() - 47 * 60 * 60 * 1000)
+        : new Date(); // Fecha actual si no se especifica fin
 
       whereClause = {
         ...whereClause,
