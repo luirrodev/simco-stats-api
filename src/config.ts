@@ -13,5 +13,11 @@ export default registerAs('config', () => {
     redis: {
       url: process.env.REDIS_URL,
     },
+    jwt: {
+      accessTokenSecret: process.env.JWT_ACCESS_SECRET,
+      accessTokenExpiration: process.env.JWT_ACCESS_EXPIRATION,
+      refreshTokenSecret: process.env.JWT_REFRESH_SECRET,
+      refreshTokenExpiration: process.env.JWT_REFRESH_EXPIRATION,
+    },
   };
 });
