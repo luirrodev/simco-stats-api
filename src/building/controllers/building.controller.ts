@@ -6,10 +6,13 @@ import {
   ParseIntPipe,
   HttpException,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import { BuildingService } from '../services/building.service';
+import { JWTAuthGuard } from 'src/auth/guards';
 
 @Controller('buildings')
+@UseGuards(JWTAuthGuard)
 export class BuildingController {
   constructor(private readonly buildingService: BuildingService) {}
 

@@ -1,10 +1,12 @@
-import { Controller, Get, Post, Delete, Body } from '@nestjs/common';
+import { Controller, Get, Delete, UseGuards } from '@nestjs/common';
 import { QueueService } from './queue.service';
+import { JWTAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 
 /**
  * Controlador para probar y administrar la cola de sincronización de sale orders
  */
 @Controller('queue')
+@UseGuards(JWTAuthGuard)
 export class QueueController {
   constructor(private readonly queueService: QueueService) {}
 

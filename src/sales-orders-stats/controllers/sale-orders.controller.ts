@@ -5,6 +5,7 @@ import {
   ParseIntPipe,
   Post,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import { SaleOrdersService } from '../services/sale-orders.service';
 import { BuildingService } from '../../building/services/building.service';
@@ -13,6 +14,7 @@ import {
   GetAllSaleOrdersDto,
   SaleOrdersStatsDto,
 } from '../dtos/sales-orders.dtos';
+import { JWTAuthGuard } from 'src/auth/guards';
 
 export interface SyncResult {
   success: boolean;
@@ -22,6 +24,7 @@ export interface SyncResult {
 }
 
 @Controller('sale-orders')
+@UseGuards(JWTAuthGuard)
 export class SaleOrdersController {
   constructor(
     private readonly saleOrdersService: SaleOrdersService,
