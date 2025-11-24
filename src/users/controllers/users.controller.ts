@@ -7,12 +7,15 @@ import {
   Param,
   Body,
   ParseIntPipe,
+  UseGuards,
 } from '@nestjs/common';
 
 import { UsersService } from '../services/users.service';
 import { UserEntity } from '../entities/user.entity';
+import { JWTAuthGuard } from '../../auth/guards/jwt-auth.guard';
 
 @Controller('users')
+@UseGuards(JWTAuthGuard) // Protege todos los endpoints
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
