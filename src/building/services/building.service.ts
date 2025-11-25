@@ -94,8 +94,8 @@ export class BuildingService {
     // Obtener los headers necesarios para la petición
     const headers = await this.authService.getHeaderWithValidCookie();
     // Agregar timestamp actual
-    headers['x-prot'] = 'e4a1c87287a24ceefcac11950b995e82';
-    headers['x-ts'] = '1755541009353';
+    headers['x-prot'] = '1ee7a97f559b1c4c38b37ec0371c0118';
+    headers['x-ts'] = '1764076180903';
 
     try {
       const response = await firstValueFrom(
