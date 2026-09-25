@@ -6,6 +6,7 @@ import {
   CreateDateColumn,
 } from 'typeorm';
 import { LogLevel } from '../types/log.types';
+import type { JsonObject } from '../types/log.types';
 
 @Entity({ name: 'logs' })
 export class Log {
@@ -24,10 +25,10 @@ export class Log {
   message!: string;
 
   @Column({ type: 'jsonb', nullable: true })
-  context!: Record<string, any>;
+  context!: JsonObject;
 
   @Column({ type: 'jsonb', nullable: true })
-  metadata!: Record<string, any>;
+  metadata!: JsonObject;
 
   @Column({ type: 'int', nullable: true, name: 'status_code' })
   statusCode!: number | null;
@@ -53,7 +54,7 @@ export class Log {
   method!: string | null;
 
   @Column({ type: 'jsonb', nullable: true })
-  error!: Record<string, any> | null;
+  error!: JsonObject | null;
 
   @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })
   @Index()

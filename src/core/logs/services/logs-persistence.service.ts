@@ -7,6 +7,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import type { ConfigType } from '@nestjs/config';
 import { Repository } from 'typeorm';
+import type { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity';
 
 import { Log } from '../entities/log.entity';
 import { AuditLog } from '../entities/audit-log.entity';
@@ -33,7 +34,7 @@ import config from '@utils/config';
  */
 @Injectable()
 export class LogsPersistenceService implements OnApplicationShutdown {
-  private logger = new Logger(LogsPersistenceService.name);
+  private readonly logger = new Logger(LogsPersistenceService.name);
   private logBuffer: CreateLogDto[] = [];
   private auditLogBuffer: CreateAuditLogDto[] = [];
 
@@ -51,11 +52,11 @@ export class LogsPersistenceService implements OnApplicationShutdown {
 
   constructor(
     @InjectRepository(Log)
-    private logRepo: Repository<Log>,
+    private readonly logRepo: Repository<Log>,
     @InjectRepository(AuditLog)
-    private auditLogRepo: Repository<AuditLog>,
+    private readonly auditLogRepo: Repository<AuditLog>,
     @Inject(config.KEY)
-    private configService: ConfigType<typeof config>,
+    private readonly configService: ConfigType<typeof config>,
   ) {
     // Leer variables de configuración
     this.batchSize = this.configService.logs.batchSize;
@@ -124,7 +125,9 @@ export class LogsPersistenceService implements OnApplicationShutdown {
 
       // Si insert falla, lanzar — Bull reintentará el job de LogsProcessor
       // No reintentar aquí para evitar buffer infinito si BD está caída
-      await this.logRepo.insert(logsToInsert);
+      await this.logRepo.insert(
+        logsToInsert as unknown as QueryDeepPartialEntity<Log>[],
+      );
     } finally {
       this.isFlushingLogs = false;
     }
@@ -144,12 +147,20 @@ export class LogsPersistenceService implements OnApplicationShutdown {
     this.isFlushingAudit = true;
     try {
       const auditLogsToInsert = this.auditLogBuffer.map((dto) => ({
-        ...dto,
+        requestId: dto.requestId ?? null,
+        entityName: dto.entityName,
+        entityId: dto.entityId,
+        operation: dto.operation,
+        userId: dto.userId ?? null,
+        changes: dto.changes,
+        metadata: dto.metadata ?? null,
         loggedAt: new Date(),
       }));
       this.auditLogBuffer = [];
 
-      await this.auditLogRepo.insert(auditLogsToInsert);
+      await this.auditLogRepo.insert(
+        auditLogsToInsert as unknown as QueryDeepPartialEntity<AuditLog>[],
+      );
     } finally {
       this.isFlushingAudit = false;
     }
@@ -160,11 +171,11 @@ export class LogsPersistenceService implements OnApplicationShutdown {
    */
   private startPeriodicFlush(): void {
     this.intervalRef = setInterval(() => {
-      this.flushLogBuffer().catch((err) => {
-        this.logger.error('Error flushing logs:', err);
+      this.flushLogBuffer().catch((error: unknown) => {
+        this.logger.error('Error flushing logs:', error);
       });
-      this.flushAuditLogBuffer().catch((err) => {
-        this.logger.error('Error flushing audit logs:', err);
+      this.flushAuditLogBuffer().catch((error: unknown) => {
+        this.logger.error('Error flushing audit logs:', error);
       });
     }, this.flushTimeout);
   }
@@ -187,9 +198,7 @@ export class LogsPersistenceService implements OnApplicationShutdown {
    */
   async onApplicationShutdown(): Promise<void> {
     // Detener intervalo
-    if (this.intervalRef) {
-      clearInterval(this.intervalRef);
-    }
+    clearInterval(this.intervalRef);
 
     // Flush final para salvar logs en buffer antes de morir
     await this.flushLogBuffer();

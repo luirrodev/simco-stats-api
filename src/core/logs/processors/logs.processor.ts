@@ -13,7 +13,7 @@ import { LogsPersistenceService } from '../services/logs-persistence.service';
 export class LogsProcessor {
   private readonly logger = new Logger(LogsProcessor.name);
 
-  constructor(private logsPersistenceService: LogsPersistenceService) {}
+  constructor(private readonly logsPersistenceService: LogsPersistenceService) {}
 
   /**
    * Procesa un job de log desde la queue

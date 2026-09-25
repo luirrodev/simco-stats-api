@@ -4,7 +4,7 @@ import {
   ExecutionContext,
   CallHandler,
 } from '@nestjs/common';
-import { Observable } from 'rxjs';
+import type { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { Request, Response } from 'express';
 import { LoggingService } from '../services/logging.service';
@@ -24,11 +24,11 @@ const EXCLUDED_SUCCESS_PATHS = new Set(['/health']);
 @Injectable()
 export class LoggingInterceptor implements NestInterceptor {
   constructor(
-    private loggingService: LoggingService,
-    private requestContextService: RequestContextService,
+    private readonly loggingService: LoggingService,
+    private readonly requestContextService: RequestContextService,
   ) {}
 
-  intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
+  intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
     const req = context.switchToHttp().getRequest<Request>();
     const res = context.switchToHttp().getResponse<Response>();
 

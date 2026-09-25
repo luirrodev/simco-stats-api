@@ -33,7 +33,7 @@ import type { LogData } from '../types/log.types';
 export class LogsEventListener {
   private readonly logger = new Logger(LogsEventListener.name);
 
-  constructor(@InjectQueue('logs') private logsQueue: Queue) {}
+  constructor(@InjectQueue('logs') private readonly logsQueue: Queue) {}
 
   /**
    * Escucha evento 'logs.create' emitido por LoggingService
@@ -56,7 +56,7 @@ export class LogsEventListener {
     try {
       await this.logsQueue.add('process-log', logData, {
         // jobId único: evita duplicados incluso con múltiples logs por request
-        jobId: logData.context?.requestId
+        jobId: logData.context.requestId
           ? `log-${logData.context.requestId}-${Date.now()}`
           : undefined,
         // Reintentos con backoff exponencial

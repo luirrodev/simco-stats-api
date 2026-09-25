@@ -13,6 +13,7 @@ import { OmitType } from '@nestjs/swagger';
 
 import { PaginationDto, SortDirection } from '@common/dto/pagination.dto';
 import { AuditOperation } from '../types/log.types';
+import type { JsonObject } from '../types/log.types';
 
 export class CreateAuditLogDto {
   @IsUUID()
@@ -33,11 +34,11 @@ export class CreateAuditLogDto {
   userId?: number;
 
   @IsObject()
-  changes!: Record<string, any>;
+  changes!: JsonObject;
 
   @IsObject()
   @IsOptional()
-  metadata?: Record<string, any>;
+  metadata?: JsonObject;
 }
 
 /**
@@ -143,10 +144,10 @@ export class AuditLogResponseDto {
   userId?: number;
 
   @ApiProperty()
-  changes!: Record<string, any>;
+  changes!: JsonObject;
 
   @ApiProperty({ required: false })
-  metadata?: Record<string, any>;
+  metadata?: JsonObject;
 
   @ApiProperty()
   loggedAt!: Date;

@@ -11,7 +11,15 @@ export enum AuditOperation {
   DELETE = 'DELETE',
 }
 
-export interface LogContext {
+export type JsonObject = Record<string, unknown>;
+
+export interface SerializedError extends JsonObject {
+  message: string;
+  stack?: string;
+  name?: string;
+}
+
+export interface LogContext extends JsonObject {
   requestId: string;
   userId?: number;
   storeId?: number;
@@ -26,21 +34,17 @@ export interface LogData {
   level: LogLevel;
   message: string;
   context: LogContext;
-  metadata?: Record<string, any>;
+  metadata?: JsonObject;
   statusCode?: number;
   duration?: number;
   error?:
-    | {
-        message: string;
-        stack?: string;
-        name?: string;
-      }
-    | Record<string, any>;
+    | SerializedError
+    | JsonObject;
 }
 
 export interface AuditChangeData {
-  before?: Record<string, any>;
-  after?: Record<string, any>;
+  before?: JsonObject;
+  after?: JsonObject;
 }
 
 export interface AuditableEntity {
@@ -54,5 +58,5 @@ export interface AuditLogData {
   operation: AuditOperation;
   userId?: number;
   changes: AuditChangeData;
-  metadata?: Record<string, any>;
+  metadata?: JsonObject;
 }

@@ -1,14 +1,22 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Request } from 'express';
 import { randomUUID } from 'crypto';
-import { LogLevel, LogData, LogContext } from '../types/log.types';
+import {
+  JsonObject,
+  LogData,
+  LogLevel,
+  LogContext,
+  SerializedError,
+} from '../types/log.types';
 
 const REQUEST_ID_KEY = 'requestId';
 
 @Injectable()
 export class LoggingService {
-  constructor(private eventEmitter: EventEmitter2) {}
+  private readonly logger = new Logger(LoggingService.name);
+
+  constructor(private readonly eventEmitter: EventEmitter2) {}
 
   /**
    * Genera un request ID único
@@ -40,7 +48,7 @@ export class LoggingService {
   log(
     message: string,
     context: LogContext,
-    metadata?: Record<string, any>,
+    metadata?: JsonObject,
   ): void {
     this.createLog(LogLevel.LOG, message, context, metadata);
   }
@@ -52,7 +60,7 @@ export class LoggingService {
   debug(
     message: string,
     context: LogContext,
-    metadata?: Record<string, any>,
+    metadata?: JsonObject,
   ): void {
     this.createLog(LogLevel.DEBUG, message, context, metadata);
   }
@@ -64,7 +72,7 @@ export class LoggingService {
   warn(
     message: string,
     context: LogContext,
-    metadata?: Record<string, any>,
+    metadata?: JsonObject,
   ): void {
     this.createLog(LogLevel.WARN, message, context, metadata);
   }
@@ -77,7 +85,7 @@ export class LoggingService {
     message: string,
     context: LogContext,
     error?: unknown,
-    metadata?: Record<string, any>,
+    metadata?: JsonObject,
   ): void {
     const errorData = this.formatError(error);
     this.createLog(LogLevel.ERROR, message, context, metadata, errorData);
@@ -92,9 +100,10 @@ export class LoggingService {
     level: LogLevel,
     message: string,
     context: LogContext,
-    metadata?: Record<string, any>,
+    metadata?: JsonObject,
     errorData?:
-      Record<string, any> | { message: string; stack?: string; name?: string },
+      | JsonObject
+      | SerializedError,
   ): void {
     const logData: LogData = {
       level,
@@ -107,16 +116,18 @@ export class LoggingService {
     // Emitir evento sincronamente - el listener se encargará de la persistencia
     try {
       this.eventEmitter.emit('logs.create', logData);
-    } catch (err) {
-      // Si el evento falla, al menos log en console (fallback)
-      console.error('[LoggingService] Error emitting log event:', err);
+    } catch (error: unknown) {
+      this.logger.error(
+        'Error emitting log event',
+        error instanceof Error ? error.stack : String(error),
+      );
     }
   }
 
   /**
    * Formatea un error para almacenamiento
    */
-  private formatError(error?: unknown): Record<string, any> | undefined {
+  private formatError(error?: unknown): JsonObject | SerializedError | undefined {
     if (!error) return undefined;
 
     if (error instanceof Error) {
@@ -127,7 +138,27 @@ export class LoggingService {
       };
     }
 
-    return error;
+    if (Array.isArray(error)) {
+      return { message: JSON.stringify(error) };
+    }
+
+    if (typeof error === 'object') {
+      return error as JsonObject;
+    }
+
+    if (typeof error === 'string') return { message: error };
+    if (
+      typeof error === 'number' ||
+      typeof error === 'boolean' ||
+      typeof error === 'bigint'
+    ) {
+      return { message: error.toString() };
+    }
+    if (typeof error === 'symbol') {
+      return { message: error.description ?? 'Symbol' };
+    }
+
+    return { message: 'Unknown error' };
   }
 
   /**
@@ -137,12 +168,14 @@ export class LoggingService {
     req: Request,
     additionalContext?: Partial<LogContext>,
   ): LogContext {
+    const userAgent = req.get('user-agent');
+
     return {
       requestId: this.getRequestId(req),
       endpoint: `${req.method} ${req.path}`,
       method: req.method,
       ip: this.extractIp(req),
-      userAgent: req.get('user-agent') || undefined,
+      userAgent: userAgent === '' ? undefined : userAgent ?? undefined,
       userId: req.user?.sub,
       timestamp: new Date(),
       ...additionalContext,
@@ -157,6 +190,6 @@ export class LoggingService {
     if (forwarded) {
       return forwarded.split(',')[0].trim();
     }
-    return req.ip || 'unknown';
+    return req.ip === '' ? 'unknown' : (req.ip ?? 'unknown');
   }
 }

@@ -6,6 +6,7 @@ import {
   CreateDateColumn,
 } from 'typeorm';
 import { AuditOperation } from '../types/log.types';
+import type { JsonObject } from '../types/log.types';
 
 @Entity({ name: 'audit_logs' })
 export class AuditLog {
@@ -32,10 +33,10 @@ export class AuditLog {
   userId!: number | null;
 
   @Column({ type: 'jsonb' })
-  changes!: Record<string, any>;
+  changes!: JsonObject;
 
   @Column({ type: 'jsonb', nullable: true })
-  metadata!: Record<string, any>;
+  metadata!: JsonObject;
 
   @CreateDateColumn({ type: 'timestamptz', name: 'logged_at' })
   @Index()

@@ -13,6 +13,7 @@ import { OmitType } from '@nestjs/swagger';
 
 import { PaginationDto, SortDirection } from '@common/dto/pagination.dto';
 import { LogLevel } from '../types/log.types';
+import type { JsonObject } from '../types/log.types';
 
 export class CreateLogDto {
   @IsString()
@@ -26,11 +27,11 @@ export class CreateLogDto {
 
   @IsObject()
   @IsOptional()
-  context?: Record<string, any>;
+  context?: JsonObject;
 
   @IsObject()
   @IsOptional()
-  metadata?: Record<string, any>;
+  metadata?: JsonObject;
 
   @IsNumber()
   @IsOptional()
@@ -62,7 +63,7 @@ export class CreateLogDto {
 
   @IsObject()
   @IsOptional()
-  error?: Record<string, any>;
+  error?: JsonObject;
 }
 
 /**

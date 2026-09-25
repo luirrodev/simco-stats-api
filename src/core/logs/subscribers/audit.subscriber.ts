@@ -28,8 +28,7 @@ export class AuditSubscriber implements EntitySubscriberInterface<AuditableEntit
   }
 
   async afterInsert(event: InsertEvent<AuditableEntity>): Promise<void> {
-    const entityName = event.metadata?.name;
-    if (!entityName || !event.entity) return;
+    const entityName = event.metadata.name;
     if (!this.shouldAudit(entityName)) return;
     const entityId = this.getEntityId(event.entity);
     if (!entityId) return;
@@ -38,7 +37,7 @@ export class AuditSubscriber implements EntitySubscriberInterface<AuditableEntit
       await this.logsPersistenceService.addAuditLogToBuffer({
         requestId: this.requestContextService.getRequestId(),
         entityName,
-        entityId: String(entityId),
+        entityId,
         operation: AuditOperation.CREATE,
         changes: { after: event.entity },
         userId: this.requestContextService.get('userId'),
@@ -53,8 +52,7 @@ export class AuditSubscriber implements EntitySubscriberInterface<AuditableEntit
   }
 
   async afterUpdate(event: UpdateEvent<AuditableEntity>): Promise<void> {
-    const entityName = event.metadata?.name;
-    if (!entityName || !event.entity || !event.databaseEntity) return;
+    const entityName = event.metadata.name;
     if (!this.shouldAudit(entityName)) return;
     const entityId = this.getEntityId(event.entity);
     if (!entityId) return;
@@ -66,7 +64,7 @@ export class AuditSubscriber implements EntitySubscriberInterface<AuditableEntit
       await this.logsPersistenceService.addAuditLogToBuffer({
         requestId: this.requestContextService.getRequestId(),
         entityName,
-        entityId: String(entityId),
+        entityId,
         operation: AuditOperation.UPDATE,
         changes: {
           before: event.databaseEntity,
@@ -85,8 +83,7 @@ export class AuditSubscriber implements EntitySubscriberInterface<AuditableEntit
   }
 
   async afterRemove(event: RemoveEvent<AuditableEntity>): Promise<void> {
-    const entityName = event.metadata?.name;
-    if (!entityName || !event.entity) return;
+    const entityName = event.metadata.name;
     if (!this.shouldAudit(entityName)) return;
     const entityId = this.getEntityId(event.entity);
     if (!entityId) return;
@@ -95,7 +92,7 @@ export class AuditSubscriber implements EntitySubscriberInterface<AuditableEntit
       await this.logsPersistenceService.addAuditLogToBuffer({
         requestId: this.requestContextService.getRequestId(),
         entityName,
-        entityId: String(entityId),
+        entityId,
         operation: AuditOperation.DELETE,
         changes: { before: event.entity },
         userId: this.requestContextService.get('userId'),
@@ -146,9 +143,9 @@ export class AuditSubscriber implements EntitySubscriberInterface<AuditableEntit
   private getEntityId(
     entity: Partial<AuditableEntity> | null | undefined,
   ): string | null {
-    if (!entity || entity.id === null || entity.id === undefined) return null;
+    if (entity?.id === undefined) return null;
 
-    return String(entity.id);
+    return entity.id.toString();
   }
 
   private getErrorMessage(error: unknown): string {
