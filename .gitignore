@@ -3,12 +3,10 @@
 /node_modules
 /build
 
-#vscode
-/.vscode
-
 # Logs
 logs
 *.log
+!src/core/logs
 npm-debug.log*
 pnpm-debug.log*
 yarn-debug.log*
@@ -33,18 +31,16 @@ lerna-debug.log*
 
 # IDE - VSCode
 .vscode/*
-!.vscode/settings.json
+.vscode/settings.json
 !.vscode/tasks.json
-!.vscode/launch.json
+.vscode/launch.json
 !.vscode/extensions.json
 
 # dotenv environment variable files
 .env
-.env.development.local
-.env.test.local
-.env.production.local
-.env.local
+.env.stage
 .env.prod
+.env.dev
 
 # temp directory
 .temp
@@ -55,9 +51,7 @@ pids
 *.pid
 *.seed
 *.pid.lock
+.pnpm-store
 
 # Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
-
-#windsurf_rules
-.windsurf/
