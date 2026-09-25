@@ -1,8 +1,49 @@
+# Control de versiones
 .git
-.vscode
+.gitignore
+.github
+.agents
+opencode.jsonc
+
+# Dependencias
 node_modules
-dist
 npm-debug.log
+yarn-debug.log
+yarn-error.log
+pnpm-debug.log
+
+# Archivos de entorno (excepto plantillas)
 .env
-.env.test
-.env.development
+.env.dev
+.env.example
+.env.prod
+.env.local
+.env.*.local
+!.env.template
+
+# Archivos de IDE y editor
+.idea
+.vscode
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Archivos de sistema
+.DS_Store
+Thumbs.db
+
+# Directorios de compilación
+/dist
+/build
+/coverage
+
+# Logs
+logs
+*.log
+
+# Otros
+README.md
+docker-compose*.yml
+Dockerfile*
