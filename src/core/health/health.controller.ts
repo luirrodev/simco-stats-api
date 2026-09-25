@@ -14,10 +14,10 @@ export class HealthController {
   private static readonly HEALTH_TIMEOUT_MS = 4000;
 
   constructor(
-    private health: HealthCheckService,
-    private db: TypeOrmHealthIndicator,
-    private healthIndicatorService: HealthIndicatorService,
-    @InjectRedis() private redis: Redis,
+    private readonly health: HealthCheckService,
+    private readonly db: TypeOrmHealthIndicator,
+    private readonly healthIndicatorService: HealthIndicatorService,
+    @InjectRedis() private readonly redis: Redis,
   ) {}
 
   private withTimeout<T>(promise: Promise<T>, label: string): Promise<T> {
@@ -35,7 +35,7 @@ export class HealthController {
           clearTimeout(timer);
           resolve(result);
         })
-        .catch((error) => {
+        .catch((error: unknown) => {
           clearTimeout(timer);
           reject(error instanceof Error ? error : new Error(String(error)));
         });
@@ -51,7 +51,7 @@ export class HealthController {
       }
 
       return this.healthIndicatorService.check('redis').up();
-    } catch (error) {
+    } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Unknown error';
 
       return this.healthIndicatorService.check('redis').down({ message });

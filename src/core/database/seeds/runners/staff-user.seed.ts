@@ -1,5 +1,8 @@
+import { Logger } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import * as bcrypt from 'bcryptjs';
+
+import { envOrDefault } from '@core/common/utils/environment.util';
 
 import {
   User,
@@ -14,25 +17,34 @@ const DEV_DEFAULTS = {
   firstName: 'Super',
   lastName: 'Admin',
 };
+const logger = new Logger('StaffUserSeed');
 
 export async function seedSuperAdminUser(
   dataSource: DataSource,
   superAdminRole: Role,
 ): Promise<void> {
-  const isDev = (process.env.NODE_ENV || 'dev') === 'dev';
+  const isDev = envOrDefault(process.env.NODE_ENV, 'dev') === 'dev';
 
   const email =
-    process.env.SEED_SUPERADMIN_EMAIL ||
-    (isDev ? DEV_DEFAULTS.email : undefined);
+    envOrDefault(
+      process.env.SEED_SUPERADMIN_EMAIL,
+      isDev ? DEV_DEFAULTS.email : undefined,
+    );
   const password =
-    process.env.SEED_SUPERADMIN_PASSWORD ||
-    (isDev ? DEV_DEFAULTS.password : undefined);
+    envOrDefault(
+      process.env.SEED_SUPERADMIN_PASSWORD,
+      isDev ? DEV_DEFAULTS.password : undefined,
+    );
   const firstName =
-    process.env.SEED_SUPERADMIN_FIRST_NAME ||
-    (isDev ? DEV_DEFAULTS.firstName : undefined);
+    envOrDefault(
+      process.env.SEED_SUPERADMIN_FIRST_NAME,
+      isDev ? DEV_DEFAULTS.firstName : undefined,
+    );
   const lastName =
-    process.env.SEED_SUPERADMIN_LAST_NAME ||
-    (isDev ? DEV_DEFAULTS.lastName : undefined);
+    envOrDefault(
+      process.env.SEED_SUPERADMIN_LAST_NAME,
+      isDev ? DEV_DEFAULTS.lastName : undefined,
+    );
 
   if (!email || !password || !firstName || !lastName) {
     throw new Error(
@@ -48,7 +60,7 @@ export async function seedSuperAdminUser(
   });
 
   if (existingUser) {
-    console.log(`Usuario SUPER_ADMIN ya existe (${email}), no se modifica`);
+    logger.log(`Usuario SUPER_ADMIN ya existe (${email}), no se modifica`);
     return;
   }
 
@@ -76,5 +88,5 @@ export async function seedSuperAdminUser(
     await manager.save(newStaff);
   });
 
-  console.log(`Usuario SUPER_ADMIN creado (${email})`);
+  logger.log(`Usuario SUPER_ADMIN creado (${email})`);
 }

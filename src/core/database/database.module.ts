@@ -30,7 +30,7 @@ import buildDatabaseUrlFromConfig from '@core/common/utils/database-url.util';
         options: {
           host: configService.redis.host,
           port: configService.redis.port,
-          password: configService.redis.password || undefined,
+          password: configService.redis.password ?? undefined,
           db: configService.redis.db,
         },
       }),

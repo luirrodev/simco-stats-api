@@ -1,9 +1,11 @@
+import { Logger } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 
 import { Role } from '@core/access-control/roles/entities/role.entity';
 import { Permission } from '@core/access-control/permissions/entities/permission.entity';
 
 const SUPER_ADMIN_ROLE_NAME = 'SUPER_ADMIN';
+const logger = new Logger('RolesSeed');
 
 export async function seedSuperAdminRole(
   dataSource: DataSource,
@@ -23,7 +25,7 @@ export async function seedSuperAdminRole(
       permissions: allPermissions,
     });
     role = await roleRepo.save(role);
-    console.log(
+    logger.log(
       `Rol ${SUPER_ADMIN_ROLE_NAME} creado con ${allPermissions.length} permisos`,
     );
     return role;
@@ -39,11 +41,11 @@ export async function seedSuperAdminRole(
     role.permissions = allPermissions;
     role.version += 1;
     role = await roleRepo.save(role);
-    console.log(
+    logger.log(
       `Rol ${SUPER_ADMIN_ROLE_NAME} actualizado (version ${role.version}) con ${allPermissions.length} permisos`,
     );
   } else {
-    console.log(`Rol ${SUPER_ADMIN_ROLE_NAME} ya está al día`);
+    logger.log(`Rol ${SUPER_ADMIN_ROLE_NAME} ya está al día`);
   }
 
   return role;
