@@ -19,7 +19,7 @@ export interface RequestContext {
 
 @Injectable()
 export class RequestContextService {
-  private asyncLocalStorage = new AsyncLocalStorage<RequestContext>();
+  private readonly asyncLocalStorage = new AsyncLocalStorage<RequestContext>();
 
   /**
    * Inicia el contexto para una request
@@ -44,7 +44,7 @@ export class RequestContextService {
    * Retorna el contexto guardado o un objeto vacío si no hay contexto
    */
   getContext(): RequestContext {
-    return this.asyncLocalStorage.getStore() || {};
+    return this.asyncLocalStorage.getStore() ?? {};
   }
 
   /**

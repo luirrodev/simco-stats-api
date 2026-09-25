@@ -28,7 +28,9 @@ export class RequestContextMiddleware implements NestMiddleware {
         userAgent: req.get('user-agent'),
         timestamp: new Date(),
       },
-      () => next(),
+      () => {
+        next();
+      },
     );
   }
 }

@@ -17,7 +17,9 @@ interface ErrorResponse {
   requestId?: string;
 }
 
-const DB_ERROR_CODES: Record<string, { status: number; message: string }> = {
+const DB_ERROR_CODES: Partial<
+  Record<string, { status: number; message: string }>
+> = {
   '23505': { status: HttpStatus.CONFLICT, message: 'Duplicate entry' },
   '23503': { status: HttpStatus.BAD_REQUEST, message: 'Foreign key violation' },
   '23502': {
@@ -32,7 +34,7 @@ const DB_ERROR_CODES: Record<string, { status: number; message: string }> = {
 
 @Catch()
 export class GlobalExceptionFilter implements ExceptionFilter {
-  constructor(private loggingService: LoggingService) {}
+  constructor(private readonly loggingService: LoggingService) {}
 
   private readonly isProduction = process.env.NODE_ENV === 'prod';
 
@@ -79,7 +81,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
       message: this.isProduction
         ? 'Internal server error'
-        : ((exception as Error)?.message ?? 'Unknown error'),
+        : this.getExceptionMessage(exception),
       error: 'Internal Server Error',
     };
   }
@@ -92,12 +94,17 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     const statusCode = exception.getStatus();
     const exceptionResponse = exception.getResponse();
 
-    if (typeof exceptionResponse === 'object' && exceptionResponse !== null) {
+    if (typeof exceptionResponse === 'object') {
       const res = exceptionResponse as Record<string, unknown>;
+      const message = res.message;
+      const error = res.error;
+
       return {
         statusCode,
-        message: (res.message as string | string[]) || exception.message,
-        error: (res.error as string) || exception.name,
+        message: message
+          ? (message as string | string[])
+          : exception.message,
+        error: error ? (error as string) : exception.name,
       };
     }
 
@@ -114,21 +121,32 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     if (typeof exception !== 'object' || exception === null) return null;
 
     // TypeORM wraps pg errors en driverError, o directamente en .code
-    const code =
-      (exception as Record<string, unknown>).code ??
-      (
-        (exception as Record<string, unknown>).driverError as Record<
-          string,
-          unknown
-        >
-      )?.code;
+    const error = exception as Record<string, unknown>;
+    const driverError = error.driverError;
+    const driverErrorCode =
+      typeof driverError === 'object' && driverError !== null
+        ? (driverError as Record<string, unknown>).code
+        : undefined;
+    const code = error.code ?? driverErrorCode;
 
-    if (typeof code === 'string' && DB_ERROR_CODES[code]) {
-      const { status, message } = DB_ERROR_CODES[code];
+    if (typeof code === 'string') {
+      const dbError = DB_ERROR_CODES[code];
+      if (!dbError) return null;
+
+      const { status, message } = dbError;
       return { statusCode: status, message, error: 'Database Error' };
     }
 
     return null;
+  }
+
+  private getExceptionMessage(exception: unknown): string {
+    if (typeof exception !== 'object' || exception === null) {
+      return 'Unknown error';
+    }
+
+    const message = (exception as Record<string, unknown>).message;
+    return typeof message === 'string' ? message : 'Unknown error';
   }
 
   private logError(
