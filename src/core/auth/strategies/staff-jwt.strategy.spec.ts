@@ -1,5 +1,10 @@
 import { UnauthorizedException } from '@nestjs/common';
+import type { ConfigType } from '@nestjs/config';
+import type { Repository } from 'typeorm';
 
+import config from '@common/utils/config';
+import { User } from '@core/access-control/users/entities/user.entity';
+import { AuthSession } from '../entities/auth-session.entity';
 import { StaffJwtStrategy } from './staff-jwt.strategy';
 
 const appConfig = {
@@ -8,7 +13,7 @@ const appConfig = {
     issuer: 'qvawin-api',
     audience: 'qvawin-staff',
   },
-} as any;
+} as unknown as ConfigType<typeof config>;
 
 const payload = {
   sub: 1,
@@ -31,10 +36,10 @@ describe('StaffJwtStrategy', () => {
         isActive: true,
         role: { name: 'administrator', version: 3, permissions: [] },
       }),
-    } as any;
+    } as unknown as Repository<User>;
     const sessionRepo = {
       findOne: jest.fn().mockResolvedValue({ id: payload.sid }),
-    } as any;
+    } as unknown as Repository<AuthSession>;
     const strategy = new StaffJwtStrategy(appConfig, userRepo, sessionRepo);
 
     await expect(strategy.validate(payload)).resolves.toMatchObject({
@@ -50,10 +55,10 @@ describe('StaffJwtStrategy', () => {
         isActive: true,
         role: { name: 'administrator', version: 3, permissions: [] },
       }),
-    } as any;
+    } as unknown as Repository<User>;
     const strategy = new StaffJwtStrategy(appConfig, userRepo, {
       findOne: jest.fn().mockResolvedValue(null),
-    } as any);
+    } as unknown as Repository<AuthSession>);
 
     await expect(strategy.validate(payload)).rejects.toBeInstanceOf(
       UnauthorizedException,

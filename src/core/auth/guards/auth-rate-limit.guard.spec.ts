@@ -1,6 +1,14 @@
-import { HttpException } from '@nestjs/common';
+import { HttpException, type ExecutionContext } from '@nestjs/common';
+import type { ConfigType } from '@nestjs/config';
+import type Redis from 'ioredis';
 
+import config from '@common/utils/config';
+import type { LoggingService } from '@core/logs/services/logging.service';
 import { AuthRateLimitGuard } from './auth-rate-limit.guard';
+
+jest.mock('@core/logs/services/logging.service', () => ({
+  LoggingService: jest.fn(),
+}));
 
 const appConfig = {
   auth: {
@@ -10,18 +18,18 @@ const appConfig = {
     refreshRateLimit: 2,
     refreshRateLimitWindowSeconds: 60,
   },
-} as any;
+} as unknown as ConfigType<typeof config>;
 
 describe('AuthRateLimitGuard', () => {
   it('limits login and refresh attempts using Redis counters', async () => {
     const redis = {
       incr: jest.fn().mockResolvedValueOnce(1).mockResolvedValueOnce(3),
       expire: jest.fn().mockResolvedValue(1),
-    } as any;
+    } as unknown as Redis;
     const logging = {
       warn: jest.fn(),
       createHttpContext: jest.fn().mockReturnValue({}),
-    } as any;
+    } as unknown as LoggingService;
     const guard = new AuthRateLimitGuard(redis, appConfig, logging);
     const request = {
       path: '/auth/staff/login',
@@ -31,7 +39,7 @@ describe('AuthRateLimitGuard', () => {
     };
     const context = {
       switchToHttp: () => ({ getRequest: () => request }),
-    } as any;
+    } as unknown as ExecutionContext;
 
     await expect(guard.canActivate(context)).resolves.toBe(true);
     await expect(guard.canActivate(context)).rejects.toBeInstanceOf(
@@ -44,11 +52,11 @@ describe('AuthRateLimitGuard', () => {
     const redis = {
       incr: jest.fn().mockResolvedValue(3),
       expire: jest.fn(),
-    } as any;
+    } as unknown as Redis;
     const logging = {
       warn: jest.fn(),
       createHttpContext: jest.fn().mockReturnValue({}),
-    } as any;
+    } as unknown as LoggingService;
     const guard = new AuthRateLimitGuard(redis, appConfig, logging);
     const context = {
       switchToHttp: () => ({
@@ -58,7 +66,7 @@ describe('AuthRateLimitGuard', () => {
           headers: { cookie: 'refresh_token=selector.secret' },
         }),
       }),
-    } as any;
+    } as unknown as ExecutionContext;
 
     await expect(guard.canActivate(context)).rejects.toBeInstanceOf(
       HttpException,

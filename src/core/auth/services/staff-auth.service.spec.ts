@@ -1,8 +1,19 @@
 import { JwtService } from '@nestjs/jwt';
+import type { ConfigType } from '@nestjs/config';
+import type { Request } from 'express';
+import type { DataSource, EntityManager, Repository } from 'typeorm';
 import * as bcrypt from 'bcryptjs';
 
+import config from '@common/utils/config';
+import { User } from '@core/access-control/users/entities/user.entity';
+import type { LoggingService } from '@core/logs/services/logging.service';
 import { AuthRefreshToken } from '../entities/auth-refresh-token.entity';
+import { AuthSession } from '../entities/auth-session.entity';
 import { StaffAuthService } from './staff-auth.service';
+
+jest.mock('@core/logs/services/logging.service', () => ({
+  LoggingService: jest.fn(),
+}));
 
 const appConfig = {
   jwt: {
@@ -12,7 +23,7 @@ const appConfig = {
     audience: 'qvawin-staff',
   },
   auth: { refreshTokenTtlDays: 7 },
-} as any;
+} as unknown as ConfigType<typeof config>;
 
 describe('StaffAuthService refresh rotation', () => {
   it('rotates a valid token and revokes its session on reuse', async () => {
@@ -42,23 +53,26 @@ describe('StaffAuthService refresh rotation', () => {
     const refreshTokenRepo = { findOne: jest.fn().mockResolvedValue(token) };
     const authSessionRepo = { findOne: jest.fn().mockResolvedValue(session) };
     const manager = {
-      getRepository: jest.fn((entity) =>
+      getRepository: jest.fn((entity: unknown) =>
         entity === AuthRefreshToken ? refreshTokenRepo : authSessionRepo,
       ),
-      create: jest.fn((_entity, data) => data),
+      create: jest.fn((_entity: unknown, data: unknown) => data),
       save: jest.fn().mockResolvedValue(undefined),
-    } as any;
+    } as unknown as EntityManager;
     const dataSource = {
       manager,
-      transaction: jest.fn((work) => work(manager)),
-    } as any;
+      transaction: jest.fn(
+        (work: (transactionalManager: EntityManager) => Promise<unknown>) =>
+          work(manager),
+      ),
+    } as unknown as DataSource;
     const logger = {
       warn: jest.fn(),
       createHttpContext: jest.fn().mockReturnValue({}),
-    } as any;
+    } as unknown as LoggingService;
     const service = new StaffAuthService(
-      {} as any,
-      {} as any,
+      {} as unknown as Repository<User>,
+      {} as unknown as Repository<AuthSession>,
       dataSource,
       { signAsync: jest.fn().mockResolvedValue('access-token') } as JwtService,
       logger,
@@ -67,7 +81,7 @@ describe('StaffAuthService refresh rotation', () => {
     const request = {
       get: jest.fn().mockReturnValue(null),
       ip: '127.0.0.1',
-    } as any;
+    } as unknown as Request;
 
     const rotated = await service.refresh(`${id}.${secret}`, request);
     expect(rotated).toEqual(

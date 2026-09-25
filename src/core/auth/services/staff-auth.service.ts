@@ -50,8 +50,7 @@ export class StaffAuthService {
     const user = await this.userRepo.findOne({ where: { email } });
 
     if (
-      !user ||
-      user.userType !== UserType.STAFF ||
+      user?.userType !== UserType.STAFF ||
       !user.password ||
       !user.isActive ||
       !(await bcrypt.compare(password, user.password))
@@ -246,14 +245,17 @@ export class StaffAuthService {
     rawRefreshToken: string | undefined,
   ): { id: string; secret: string } | null {
     if (!rawRefreshToken) return null;
-    const [id, secret, extra] = rawRefreshToken.split('.');
+    const tokenParts = rawRefreshToken.split('.');
+    const id = tokenParts.at(0) ?? '';
+    const secret = tokenParts.at(1) ?? '';
+    const extra = tokenParts.at(2);
     const isUuid =
       /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
-        id ?? '',
+        id,
       );
     const isSecret = new RegExp(
       `^[A-Za-z0-9_-]{${REFRESH_SECRET_LENGTH}}$`,
-    ).test(secret ?? '');
+    ).test(secret);
     return !extra && isUuid && isSecret ? { id, secret } : null;
   }
 
