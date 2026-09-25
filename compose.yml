@@ -1,0 +1,32 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    container_name: simco-backend
+    env_file:
+      - ./.env.dev
+    ports:
+      - '3005:3000'
+      - '9235:9229'
+    environment:
+      - TZ=America/Havana
+      - CI=true
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://localhost:3000/health']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    volumes:
+      - .:/usr/src/app
+      - /usr/src/app/node_modules
+    restart: unless-stopped
+    networks:
+      - simco-stats-shared-network
+
+networks:
+  simco-stats-shared-network:
+    external: true
+    name: simco-stats-network
