@@ -1,6 +1,11 @@
 {
   "compilerOptions": {
-    "module": "commonjs",
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "resolvePackageJsonExports": true,
+    "types": ["node", "jest"],
+    "esModuleInterop": true,
+    "isolatedModules": true,
     "declaration": true,
     "removeComments": true,
     "emitDecoratorMetadata": true,
@@ -16,6 +21,13 @@
     "forceConsistentCasingInFileNames": true,
     "noImplicitAny": false,
     "strictBindCallApply": false,
-    "noFallthroughCasesInSwitch": false
+    "noFallthroughCasesInSwitch": false,
+    "paths": {
+      "@features/*": ["./src/features/*"],
+      "@core/*": ["./src/core/*"],
+      "@common/*": ["./src/core/common/*"],
+      "@logs/*": ["./src/core/logs/*"],
+      "@utils/*": ["./src/core/common/utils/*"]
+    }
   }
 }
