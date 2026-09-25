@@ -14,12 +14,12 @@ import { Request } from 'express';
 @Injectable()
 export class PermissionsGuard implements CanActivate {
   constructor(
-    private reflector: Reflector,
-    private rolesService: RolesService,
+    private readonly reflector: Reflector,
+    private readonly rolesService: RolesService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const requiredPermissions = this.reflector.get<string[]>(
+    const requiredPermissions = this.reflector.get<string[] | undefined>(
       PERMISSIONS_KEY,
       context.getHandler(),
     );
@@ -31,7 +31,7 @@ export class PermissionsGuard implements CanActivate {
     const request = context.switchToHttp().getRequest<Request>();
     const user = request.user;
 
-    if (!user || !user.roleId) {
+    if (!user?.roleId) {
       throw new UnauthorizedException('Usted no tiene acceso a este recurso');
     }
 
@@ -58,11 +58,13 @@ export class PermissionsGuard implements CanActivate {
     user: PayloadToken,
     currentVersion: number,
   ): void {
-    if (user.roleVersion === undefined) {
+    const roleVersion: unknown = Reflect.get(user, 'roleVersion');
+
+    if (roleVersion === undefined) {
       return;
     }
 
-    if (currentVersion !== user.roleVersion) {
+    if (currentVersion !== roleVersion) {
       throw new UnauthorizedException(
         `Tus permisos han sido actualizados. Por favor, inicia sesión nuevamente`,
       );

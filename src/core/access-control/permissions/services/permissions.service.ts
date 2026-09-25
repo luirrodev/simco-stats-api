@@ -1,6 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { FindOptionsOrder, Like, Repository } from 'typeorm';
+import {
+  FindOptionsOrder,
+  FindOptionsWhere,
+  Like,
+  Repository,
+} from 'typeorm';
 import { Permission } from '../entities/permission.entity';
 import { UpdatePermissionDto } from '../dtos/permission.dto';
 import { PaginationDto, PaginatedResponse } from '@common/dto/pagination.dto';
@@ -9,7 +14,7 @@ import { PaginationDto, PaginatedResponse } from '@common/dto/pagination.dto';
 export class PermissionsService {
   constructor(
     @InjectRepository(Permission)
-    private permissionRepo: Repository<Permission>,
+    private readonly permissionRepo: Repository<Permission>,
   ) {}
 
   async getAllPermissions(
@@ -24,7 +29,7 @@ export class PermissionsService {
     } = paginationDto;
     const skip = (page - 1) * limit;
 
-    const whereOptions: Record<string, any>[] = [];
+    const whereOptions: FindOptionsWhere<Permission>[] = [];
 
     if (search) {
       whereOptions.push(

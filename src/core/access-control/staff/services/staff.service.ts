@@ -21,8 +21,8 @@ import { PaginationDto, PaginatedResponse } from '@common/dto/pagination.dto';
 @Injectable()
 export class StaffService {
   constructor(
-    @InjectRepository(User) private userRepo: Repository<User>,
-    @InjectRepository(Staff) private staffRepo: Repository<Staff>,
+    @InjectRepository(User) private readonly userRepo: Repository<User>,
+    @InjectRepository(Staff) private readonly staffRepo: Repository<Staff>,
     private readonly roleService: RolesService,
     private readonly dataSource: DataSource,
   ) {}
@@ -35,7 +35,7 @@ export class StaffService {
       secondName: user.secondName,
       lastName: user.lastName,
       secondLastName: user.secondLastName,
-      role: user.role?.name,
+      role: user.role.name,
       isActive: user.isActive,
       lastLoginAt: user.lastLoginAt,
       employeeCode: staff?.employeeCode ?? null,
@@ -202,14 +202,12 @@ export class StaffService {
       const savedUser = await manager.save(user);
 
       let staff = await manager.findOne(Staff, { where: { userId: id } });
-      if (!staff) {
-        staff = manager.create(Staff, { userId: id });
-      }
+      staff ??= manager.create(Staff, { userId: id });
       if (employeeCode !== undefined) {
-        staff.employeeCode = employeeCode ?? null;
+        staff.employeeCode = employeeCode;
       }
       if (department !== undefined) {
-        staff.department = department ?? null;
+        staff.department = department;
       }
       const savedStaff = await manager.save(staff);
 
@@ -262,7 +260,7 @@ export class StaffService {
     const user = await this.userRepo.findOne({
       where: { id: userId, userType: UserType.STAFF },
     });
-    if (!user || !user.password) {
+    if (!user?.password) {
       return false;
     }
 

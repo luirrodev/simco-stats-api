@@ -1,6 +1,11 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Like, FindOptionsOrder } from 'typeorm';
+import {
+  Repository,
+  Like,
+  FindOptionsOrder,
+  FindOptionsWhere,
+} from 'typeorm';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import Redis from 'ioredis';
 import { Role } from '../entities/role.entity';
@@ -15,9 +20,9 @@ import { PaginationDto, PaginatedResponse } from '@common/dto/pagination.dto';
 @Injectable()
 export class RolesService {
   constructor(
-    @InjectRepository(Role) private roleRepo: Repository<Role>,
-    private permissionsService: PermissionsService,
-    @InjectRedis() private redis: Redis,
+    @InjectRepository(Role) private readonly roleRepo: Repository<Role>,
+    private readonly permissionsService: PermissionsService,
+    @InjectRedis() private readonly redis: Redis,
   ) {}
 
   private getCacheKey(id: number): string {
@@ -41,7 +46,7 @@ export class RolesService {
     } = paginationDto;
     const skip = (page - 1) * limit;
 
-    const whereOptions: Record<string, any>[] = [];
+    const whereOptions: FindOptionsWhere<Role>[] = [];
 
     if (search) {
       whereOptions.push(

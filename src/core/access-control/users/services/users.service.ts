@@ -5,7 +5,12 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Like, FindOptionsOrder } from 'typeorm';
+import {
+  Repository,
+  Like,
+  FindOptionsOrder,
+  FindOptionsWhere,
+} from 'typeorm';
 import * as bcrypt from 'bcryptjs';
 
 import { User } from '../entities/user.entity';
@@ -20,7 +25,7 @@ import { PaginationDto, PaginatedResponse } from '@common/dto/pagination.dto';
 @Injectable()
 export class UsersService {
   constructor(
-    @InjectRepository(User) private userRepo: Repository<User>,
+    @InjectRepository(User) private readonly userRepo: Repository<User>,
     private readonly roleService: RolesService,
   ) {}
 
@@ -36,7 +41,7 @@ export class UsersService {
     } = paginationDto;
     const skip = (page - 1) * limit;
 
-    const whereOptions: Record<string, any>[] = [];
+    const whereOptions: FindOptionsWhere<User>[] = [];
 
     if (search) {
       whereOptions.push(
@@ -65,7 +70,7 @@ export class UsersService {
       secondName: user.secondName,
       lastName: user.lastName,
       secondLastName: user.secondLastName,
-      role: user.role?.name,
+      role: user.role.name,
       isActive: user.isActive,
       lastLoginAt: user.lastLoginAt,
     }));
@@ -150,7 +155,6 @@ export class UsersService {
       passwordHash = await bcrypt.hash(changes.password, 10);
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { role: _role, password: _password, ...restChanges } = changes;
 
     if (_role) {
@@ -223,7 +227,7 @@ export class UsersService {
     plainPassword: string,
   ): Promise<boolean> {
     const user = await this.userRepo.findOne({ where: { id: userId } });
-    if (!user || !user.password) {
+    if (!user?.password) {
       return false;
     }
 
