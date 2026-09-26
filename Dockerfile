@@ -1,42 +1,73 @@
-# Stage 1: Base image for dependencies
+# ============================================
+# Stage 1: Dependencies
+# ============================================
 FROM node:22-alpine AS deps
-
 WORKDIR /usr/src/app
 
-# Install pnpm
+# Instalar pnpm globalmente
 RUN npm install -g pnpm
 
-# Copy dependency definition files
-COPY package.json pnpm-lock.yaml ./
+# Copiar solo archivos de dependencias
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
 
-# Install ALL dependencies (including devDependencies)
-RUN pnpm install
+# Instalar las dependencias (para build y desarrollo)
+RUN --mount=type=cache,id=pnpm-store,target=/root/.local/share/pnpm/store \
+    pnpm install --frozen-lockfile
 
-# Stage 2: Builder for production
+# ============================================
+# Stage 2: Builder
+# ============================================
 FROM deps AS builder
 WORKDIR /usr/src/app
-COPY . .
+
+# Copiar lo necesario para compilar
+COPY --chown=node:node . .
+
+# Compilar
 RUN pnpm run build
 
-# Stage 3: Production Image
+# ============================================
+# Stage 3: Production (solo archivos finales)
+# ============================================
 FROM node:22-alpine AS production
 WORKDIR /usr/src/app
 
-# Establecer NODE_ENV para producción
 ENV NODE_ENV=prod
 
+# Instalar pnpm y SOLO dependencias de producción
 RUN npm install -g pnpm
-COPY package.json pnpm-lock.yaml ./
-RUN pnpm install --prod
-COPY --from=builder /usr/src/app/dist ./dist
-COPY entrypoint.sh .
-RUN chmod +x ./entrypoint.sh
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
+RUN --mount=type=cache,id=pnpm-store-prod,target=/root/.local/share/pnpm/store \
+    pnpm install --frozen-lockfile --prod
+COPY --from=builder --chown=node:node /usr/src/app/dist ./dist
+COPY scripts/entrypoint.prod.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+USER node
+HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
+  CMD wget -qO- http://localhost:3000/health || exit 1
 EXPOSE 3000
-ENTRYPOINT ["./entrypoint.sh"]
+ENTRYPOINT ["/entrypoint.sh"]
 
-# Stage 4: Development Image
+# ============================================
+# Stage 4: Development (con hot-reload)
+# ============================================
 FROM deps AS development
 WORKDIR /usr/src/app
-COPY . .
+
+ENV NODE_ENV=dev
+
+# Copiar TODO el código fuente (para desarrollo con montaje de volumen)
+COPY --chown=node:node . .
+
+# Compilar una vez
+RUN pnpm run build
+
+# Script de entrada para desarrollo
+COPY scripts/entrypoint.dev.sh /entrypoint.dev.sh
+RUN chmod +x /entrypoint.dev.sh
+
+RUN chown -R node:node /usr/src/app/node_modules
+
+USER node
 EXPOSE 3000
-CMD ["npm", "run", "start:debug"]
+CMD ["sh", "/entrypoint.dev.sh"]

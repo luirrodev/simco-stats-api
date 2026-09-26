@@ -1,44 +1,67 @@
-import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
-import { ScheduleModule } from '@nestjs/schedule';
-import * as Joi from 'joi';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
+import { ConfigModule, ConfigType } from '@nestjs/config';
+import { BullModule } from '@nestjs/bull';
+import { EventEmitterModule } from '@nestjs/event-emitter';
+import { APP_FILTER } from '@nestjs/core';
 
-import { AuthModule } from './auth/auth.module';
-import { DatabaseModule } from './database/database.module';
-import { RestaurantStatsModule } from './restaurant-stats/restaurant-stats.module';
-import { BuildingModule } from './building/building.module';
+// Utils
+import config from '@common/utils/config';
+import validationSchema from '@common/utils/validation.schema';
+import buildRedisUrl from '@core/common/utils/redis-url.util';
 
-import config from './config';
-import { enviroments } from './enviroments';
-import { SalesOrdersStatsModule } from './sales-orders-stats/sales-orders-stats.module';
-import { QueueModule } from './queue/queue.module';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
+// Middlewares y Servicios
+import { RequestContextMiddleware } from '@core/common/middleware/request-context.middleware';
+import { GlobalExceptionFilter } from '@core/common/filters/all-exceptions.filter';
+
+// Modulos Core
+import { CommonModule } from '@core/common/common.module';
+import { HealthModule } from '@core/health/health.module';
+import { DatabaseModule } from '@core/database/database.module';
+import { LogsModule } from '@core/logs/logs.module';
+import { AccessControlModule } from '@core/access-control/access-control.module';
+import { AuthModule } from '@core/auth/auth.module';
+import { StaffModule } from '@core/access-control/staff/staff.module';
+
+// Modulos Features
 
 @Module({
   imports: [
     ConfigModule.forRoot({
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-      envFilePath: enviroments[process.env.NODE_ENV || 'dev'],
-      isGlobal: true,
+      envFilePath: [`.env.${process.env.NODE_ENV}`, '.env'],
       load: [config],
-      validationSchema: Joi.object({
-        DATABASE_URL: Joi.string().required(),
-        GAME_EMAIL: Joi.string().email().required(),
-        GAME_PASSWORD: Joi.string().required(),
-        TIMEZONE_OFFSET: Joi.number().default(0),
-        REDIS_URL: Joi.string().required(),
+      validationSchema,
+      isGlobal: true,
+    }),
+    EventEmitterModule.forRoot({
+      wildcard: false,
+      delimiter: '.',
+      maxListeners: 20,
+      verboseMemoryLeak: true,
+    }),
+    BullModule.forRootAsync({
+      inject: [config.KEY],
+      useFactory: (configService: ConfigType<typeof config>) => ({
+        url: buildRedisUrl(configService.redis),
       }),
     }),
-    ScheduleModule.forRoot(),
-    AuthModule,
+    CommonModule,
     DatabaseModule,
-    RestaurantStatsModule,
-    SalesOrdersStatsModule,
-    BuildingModule,
-    QueueModule,
+    HealthModule,
+    LogsModule,
+    AccessControlModule,
+    AuthModule,
+    StaffModule,
   ],
-  controllers: [AppController],
-  providers: [AppService],
+  controllers: [],
+  providers: [
+    {
+      provide: APP_FILTER,
+      useClass: GlobalExceptionFilter,
+    },
+  ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(RequestContextMiddleware).forRoutes('*');
+  }
+}
