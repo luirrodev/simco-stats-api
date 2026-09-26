@@ -1,4 +1,9 @@
-import { BadGatewayException, Inject, Injectable } from '@nestjs/common';
+import {
+  BadGatewayException,
+  Inject,
+  Injectable,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import type { ConfigType } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -23,6 +28,13 @@ const USER_AGENT =
 
 export interface SimCompaniesSessionStatus {
   hasSession: boolean;
+  isValid: boolean;
+  expiresAt: Date | null;
+}
+
+export interface SimCompaniesLoginResult {
+  message: string;
+  authenticatedAt: Date;
   isValid: boolean;
   expiresAt: Date | null;
 }
@@ -69,6 +81,25 @@ export class SimCompaniesSessionService {
 
   async invalidate(): Promise<void> {
     await this.sessionRepository.delete({ id: SESSION_ID });
+  }
+
+  async forceLogin(): Promise<SimCompaniesLoginResult> {
+    await this.invalidate();
+    await this.renew();
+
+    const session = await this.findSession();
+    if (!session || !this.isValid(session)) {
+      throw new InternalServerErrorException(
+        'SimCompanies authentication did not create a valid session',
+      );
+    }
+
+    return {
+      message: 'SimCompanies authentication completed successfully',
+      authenticatedAt: session.updatedAt,
+      isValid: true,
+      expiresAt: session.expiresAt,
+    };
   }
 
   async getStatus(): Promise<SimCompaniesSessionStatus> {
