@@ -1,0 +1,188 @@
+import {
+  Injectable,
+  BadGatewayException,
+  ServiceUnavailableException,
+  HttpException,
+  NotFoundException,
+} from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { HttpService } from '@nestjs/axios';
+import { firstValueFrom } from 'rxjs';
+import { AxiosError } from 'axios';
+
+import { BuildingEntity } from '../entities/building.entity';
+import { AuthService } from '../../auth/services/auth.service';
+
+@Injectable()
+export class BuildingService {
+  constructor(
+    @InjectRepository(BuildingEntity)
+    private readonly buildingRepository: Repository<BuildingEntity>,
+    private readonly httpService: HttpService,
+    private readonly authService: AuthService,
+  ) {}
+
+  /**
+   * Guarda un solo edificio/restaurante
+   * @param data - Datos del edificio a guardar
+   * @returns Promise con la entidad guardada
+   */
+  private async saveBuilding(data: BuildingEntity): Promise<BuildingEntity> {
+    const building = this.buildingRepository.create(data);
+    return await this.buildingRepository.save(building);
+  }
+
+  /**
+   * Obtiene un edificio por su ID con estadísticas de órdenes opcionales
+   * @param id - ID del edificio
+   * @param statsOrders - Número de días para obtener estadísticas de órdenes (opcional)
+   * @returns Promise con el edificio encontrado y estadísticas si se solicitan
+   */
+  public async getBuildingById(
+    id: number,
+    statsOrders?: number,
+  ): Promise<BuildingEntity> {
+    const building = await this.buildingRepository.findOne({
+      where: { id },
+      relations: statsOrders ? ['saleOrdersStats'] : [],
+    });
+
+    if (!building) {
+      throw new NotFoundException({
+        message: 'Building not found',
+        details: `No building found with ID ${id}`,
+      });
+    }
+
+    return building;
+  }
+
+  /**
+   * Obtiene todos los edificios de la base de datos
+   * @returns Promise con la lista de todos los edificios
+   */
+  public async getAllBuildings(): Promise<BuildingEntity[]> {
+    return await this.buildingRepository.find({
+      order: {
+        name: 'ASC',
+      },
+    });
+  }
+
+  /**
+   * Obtiene los IDs y nombres de todos los edificios de tipo "sales office"
+   * @returns Array de objetos con id y name de los edificios de ventas
+   */
+  public async getSalesOfficeBuildings() {
+    const buildings = await this.getAllBuildings();
+    // Filtrar solo oficinas de ventas (kind = 'B')
+    return buildings
+      .filter((building) => building.kind === 'B')
+      .map((building) => ({
+        id: building.id,
+        name: building.name,
+      }));
+  }
+
+  /**
+   * Obtiene los datos de los edificos desde la API de SimCompanies
+   * @returns Promise con los datos de los edificios
+   */
+  private async fetchBuildingsFromAPI() {
+    const url = 'https://www.simcompanies.com/api/v2/companies/me/buildings/';
+    // Obtener los headers necesarios para la petición
+    const headers = await this.authService.getHeaderWithValidCookie();
+    // Agregar timestamp actual
+    headers['x-prot'] = '1ee7a97f559b1c4c38b37ec0371c0118';
+    headers['x-ts'] = '1764076180903';
+
+    try {
+      const response = await firstValueFrom(
+        this.httpService.get<BuildingEntity[]>(url, { headers }),
+      );
+
+      const restaurants = response.data
+        .filter((building: BuildingEntity) => building.category === 'sales')
+        .map((building) => {
+          return {
+            id: building.id,
+            name: building.name,
+            size: building.size,
+            kind: building.kind,
+            cost: building.cost,
+          };
+        });
+      return restaurants;
+    } catch (error: unknown) {
+      if (error instanceof AxiosError) {
+        const axiosError = error as AxiosError;
+        // Si hay respuesta del servidor remoto
+        if (axiosError.response) {
+          throw new BadGatewayException({
+            message: 'Error al obtener edificios desde SimCompanies',
+            status: axiosError.response.status,
+            details: axiosError.message,
+          });
+        }
+        // Si no hay respuesta (problema de red, timeout, etc)
+        throw new ServiceUnavailableException({
+          message: 'No se pudo conectar con SimCompanies',
+          details: axiosError.message,
+        });
+      }
+      if (error instanceof Error) {
+        throw new HttpException(
+          {
+            message: 'Error inesperado al obtener edificios',
+            details: error.message,
+          },
+          500,
+        );
+      }
+      throw new HttpException(
+        {
+          message: 'Error desconocido al obtener edificios',
+        },
+        500,
+      );
+    }
+  }
+
+  /**
+   * Sincroniza los edificios obtenidos de la API con la base de datos
+   * @returns Promise con los edificios sincronizados
+   */
+  public async syncBuildingsFromAPI() {
+    const buildingsFromAPI = await this.fetchBuildingsFromAPI();
+
+    const created: { id: number; name: string }[] = [];
+    const updated: { id: number; name: string }[] = [];
+
+    for (const buildingData of buildingsFromAPI) {
+      const existingBuilding = await this.getBuildingById(buildingData.id);
+
+      if (existingBuilding) {
+        // Actualizar edificio existente
+        await this.buildingRepository.update(buildingData.id, buildingData);
+        const updatedBuilding = await this.getBuildingById(buildingData.id);
+
+        if (updatedBuilding) {
+          updated.push({ id: updatedBuilding.id, name: updatedBuilding.name });
+        }
+      } else {
+        // Crear nuevo edificio
+        const newBuilding = await this.saveBuilding(buildingData);
+        created.push({ id: newBuilding.id, name: newBuilding.name });
+      }
+    }
+
+    return {
+      success: true,
+      message: 'Sincronización completada',
+      total: created.length + updated.length,
+      creados: created,
+      actualizados: updated,
+    };
+  }
+}
