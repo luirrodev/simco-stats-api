@@ -14,7 +14,7 @@ import {
   GetAllSaleOrdersDto,
   SaleOrdersStatsDto,
 } from '../dtos/sales-orders.dtos';
-import { JWTAuthGuard } from 'src/auth/guards';
+import { StaffJwtAuthGuard } from '@core/auth/guards/staff-jwt-auth.guard';
 
 export interface SyncResult {
   success: boolean;
@@ -24,7 +24,7 @@ export interface SyncResult {
 }
 
 @Controller('sale-orders')
-@UseGuards(JWTAuthGuard)
+@UseGuards(StaffJwtAuthGuard)
 export class SaleOrdersController {
   constructor(
     private readonly saleOrdersService: SaleOrdersService,

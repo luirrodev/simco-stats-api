@@ -1,11 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { BuildingService } from 'src/building/services/building.service';
+import { BuildingService } from '../../building/services/building.service';
 import { InjectRepository } from '@nestjs/typeorm';
 import { SaleOrderEntity } from '../entities/sale-order.entity';
 import { Repository } from 'typeorm';
-import { QueueService } from 'src/queue/queue.service';
-import { SaleOrderJobData } from 'src/queue/types/sale-order-job-data.type';
+import { QueueService } from '../../queue/queue.service';
+import { SaleOrderJobData } from '../../queue/types/sale-order-job-data.type';
 import { DateTime } from 'luxon';
 import { SaleOrdersService } from '../services/sale-orders.service';
 

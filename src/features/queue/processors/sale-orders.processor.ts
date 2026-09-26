@@ -1,5 +1,5 @@
 import { Processor, Process, OnQueueActive } from '@nestjs/bull';
-import { Job } from 'bull';
+import type { Job } from 'bull';
 import { SaleOrdersService } from '../../sales-orders-stats/services/sale-orders.service';
 import { Logger } from '@nestjs/common';
 

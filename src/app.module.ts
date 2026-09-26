@@ -21,6 +21,7 @@ import { LogsModule } from '@core/logs/logs.module';
 import { AccessControlModule } from '@core/access-control/access-control.module';
 import { AuthModule } from '@core/auth/auth.module';
 import { StaffModule } from '@core/access-control/staff/staff.module';
+import { SimCompaniesAuthModule } from '@features/auth/auth.module';
 
 // Modulos Features
 
@@ -51,6 +52,7 @@ import { StaffModule } from '@core/access-control/staff/staff.module';
     AccessControlModule,
     AuthModule,
     StaffModule,
+    SimCompaniesAuthModule,
   ],
   controllers: [],
   providers: [

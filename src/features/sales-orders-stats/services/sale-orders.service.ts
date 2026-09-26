@@ -1,12 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Between, Repository } from 'typeorm';
-import { HttpService } from '@nestjs/axios';
-import { firstValueFrom } from 'rxjs';
 import { AxiosError } from 'axios';
 
 import { SaleOrderEntity } from '../entities/sale-order.entity';
-import { AuthService } from '../../auth/services/auth.service';
+import { SimCompaniesClient } from '../../auth/services/simcompanies-client.service';
 import { GetAllSaleOrdersDto } from '../dtos/sales-orders.dtos';
 import { BuildingService } from '../../building/services/building.service';
 import { Resource } from '../entities/sale-order.entity';
@@ -44,8 +42,7 @@ export class SaleOrdersService {
     @InjectRepository(SaleOrderEntity)
     private readonly saleOrderRepository: Repository<SaleOrderEntity>,
     private readonly buildingService: BuildingService,
-    private readonly httpService: HttpService,
-    private readonly authService: AuthService,
+    private readonly simCompaniesClient: SimCompaniesClient,
   ) {}
 
   /**
@@ -87,15 +84,8 @@ export class SaleOrdersService {
    */
   async fetchSaleOrdersFromAPI(buildingId: number) {
     const url = `https://www.simcompanies.com/api/v2/companies/buildings/${buildingId}/sales-orders/`;
-    // Obtener los headers necesarios para la petición
-    const headers = await this.authService.getHeaderWithValidCookie();
     try {
-      // Hacer la petición HTTP usando firstValueFrom para convertir Observable a Promise
-      const response = await firstValueFrom(
-        this.httpService.get<SaleOrderEntity[]>(url, { headers }),
-      );
-
-      return response.data;
+      return await this.simCompaniesClient.get<SaleOrderEntity[]>(url);
     } catch (error: unknown) {
       // Manejo de errores específico para Axios
       if (error instanceof AxiosError) {

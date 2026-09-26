@@ -111,11 +111,13 @@ Crea un archivo `.env` en la raíz del proyecto:
 DATABASE_URL=postgresql://usuario:contraseña@localhost:5432/simco_restaurant_stats
 
 # Credenciales de SimCompanies
-GAME_EMAIL=tu_email@ejemplo.com
-GAME_PASSWORD=tu_contraseña
+SIMCOMPANIES_EMAIL=tu_email@ejemplo.com
+SIMCOMPANIES_PASSWORD=tu_contraseña
+SIMCOMPANIES_TIMEZONE_OFFSET=0
+# Clave base64 de 32 bytes, por ejemplo: openssl rand -base64 32
+SIMCOMPANIES_SESSION_ENCRYPTION_KEY=una_clave_base64_de_32_bytes
 
 # Configuración opcional
-TIMEZONE_OFFSET=0
 NODE_ENV=dev
 ```
 

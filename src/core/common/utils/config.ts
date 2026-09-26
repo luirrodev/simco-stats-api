@@ -57,6 +57,18 @@ export default registerAs('config', () => {
         10,
       ),
     },
+    simcompanies: {
+      email: envOrDefault(process.env.SIMCOMPANIES_EMAIL, ''),
+      password: envOrDefault(process.env.SIMCOMPANIES_PASSWORD, ''),
+      timezoneOffset: parseInt(
+        envOrDefault(process.env.SIMCOMPANIES_TIMEZONE_OFFSET, '0'),
+        10,
+      ),
+      sessionEncryptionKey: envOrDefault(
+        process.env.SIMCOMPANIES_SESSION_ENCRYPTION_KEY,
+        '',
+      ),
+    },
     logs: {
       level: envOrDefault(process.env.LOG_LEVEL, 'log'),
       retentionDays: parseInt(envOrDefault(process.env.LOG_RETENTION_DAYS, '90'), 10),

@@ -1,55 +1,19 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { PassportModule } from '@nestjs/passport';
-import { JwtModule } from '@nestjs/jwt';
-import { ConfigModule, ConfigService } from '@nestjs/config';
+import { HttpModule } from '@nestjs/axios';
 
-import { AuthService } from './services/auth.service';
-import { LocalAuthService } from './services/local-auth.service';
-import { TokenService } from './services/token.service';
-import { AuthController } from './controllers/auth.controller';
-import { TokenEntity } from './entities/token.entity';
-import { JwtStrategyService } from './strategies/jwt.strategy.service';
-import { LocalStrategyService } from './strategies/local.strategy.service';
-import { JWTAuthGuard } from './guards/jwt-auth.guard';
-import { LocalAuthGuard } from './guards/local-auth.guard';
-import { UsersModule } from '../users/users.module';
+import { SimCompaniesSession } from './entities/simcompanies-session.entity';
+import { SimCompaniesSessionService } from './services/simcompanies-session.service';
+import { SimCompaniesClient } from './services/simcompanies-client.service';
+import { SimCompaniesAuthController } from './controllers/simcompanies-auth.controller';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([TokenEntity]),
-    PassportModule,
-    JwtModule.registerAsync({
-      imports: [ConfigModule],
-      useFactory: (configService: ConfigService) => {
-        return {
-          secret:
-            configService.get<string>('JWT_ACCESS_SECRET') || 'default-secret',
-          signOptions: {
-            expiresIn: '1h',
-          },
-        };
-      },
-      inject: [ConfigService],
-    }),
-    UsersModule,
+    TypeOrmModule.forFeature([SimCompaniesSession]),
+    HttpModule,
   ],
-  providers: [
-    AuthService,
-    LocalAuthService,
-    TokenService,
-    JwtStrategyService,
-    LocalStrategyService,
-    JWTAuthGuard,
-    LocalAuthGuard,
-  ],
-  controllers: [AuthController],
-  exports: [
-    AuthService,
-    LocalAuthService,
-    TokenService,
-    JWTAuthGuard,
-    LocalAuthGuard,
-  ],
+  providers: [SimCompaniesSessionService, SimCompaniesClient],
+  controllers: [SimCompaniesAuthController],
+  exports: [SimCompaniesClient, SimCompaniesSessionService],
 })
-export class AuthModule {}
+export class SimCompaniesAuthModule {}

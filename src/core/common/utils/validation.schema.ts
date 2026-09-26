@@ -36,6 +36,21 @@ const validationSchema = Joi.object({
     .integer()
     .min(1)
     .default(60),
+  SIMCOMPANIES_EMAIL: Joi.string().email().required(),
+  SIMCOMPANIES_PASSWORD: Joi.string().min(1).required(),
+  SIMCOMPANIES_TIMEZONE_OFFSET: Joi.number().integer().default(0),
+  SIMCOMPANIES_SESSION_ENCRYPTION_KEY: Joi.string()
+    .base64()
+    .required()
+    .custom((value, helpers) =>
+      Buffer.from(value, 'base64').length === 32
+        ? value
+        : helpers.error('any.invalid'),
+    )
+    .messages({
+      'any.invalid':
+        'SIMCOMPANIES_SESSION_ENCRYPTION_KEY must be a base64-encoded 32-byte key',
+    }),
   MAIL_HOST: Joi.string().required(),
   MAIL_PORT: Joi.number().required(),
   MAIL_USER: Joi.string().required(),

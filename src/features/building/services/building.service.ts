@@ -7,20 +7,17 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { HttpService } from '@nestjs/axios';
-import { firstValueFrom } from 'rxjs';
 import { AxiosError } from 'axios';
 
 import { BuildingEntity } from '../entities/building.entity';
-import { AuthService } from '../../auth/services/auth.service';
+import { SimCompaniesClient } from '../../auth/services/simcompanies-client.service';
 
 @Injectable()
 export class BuildingService {
   constructor(
     @InjectRepository(BuildingEntity)
     private readonly buildingRepository: Repository<BuildingEntity>,
-    private readonly httpService: HttpService,
-    private readonly authService: AuthService,
+    private readonly simCompaniesClient: SimCompaniesClient,
   ) {}
 
   /**
@@ -91,18 +88,10 @@ export class BuildingService {
    */
   private async fetchBuildingsFromAPI() {
     const url = 'https://www.simcompanies.com/api/v2/companies/me/buildings/';
-    // Obtener los headers necesarios para la petición
-    const headers = await this.authService.getHeaderWithValidCookie();
-    // Agregar timestamp actual
-    headers['x-prot'] = '1ee7a97f559b1c4c38b37ec0371c0118';
-    headers['x-ts'] = '1764076180903';
-
     try {
-      const response = await firstValueFrom(
-        this.httpService.get<BuildingEntity[]>(url, { headers }),
-      );
+      const buildings = await this.simCompaniesClient.get<BuildingEntity[]>(url);
 
-      const restaurants = response.data
+      const restaurants = buildings
         .filter((building: BuildingEntity) => building.category === 'sales')
         .map((building) => {
           return {

@@ -1,12 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { HttpService } from '@nestjs/axios';
-import { firstValueFrom } from 'rxjs';
 import { AxiosError } from 'axios';
 
 import { RestaurantStatEntity } from '../entities/restaurant-stat.entity';
-import { AuthService } from '../../auth/services/auth.service';
+import { SimCompaniesClient } from '../../auth/services/simcompanies-client.service';
 
 interface SyncResult {
   success: boolean;
@@ -26,8 +24,7 @@ export class RestaurantStatsService {
   constructor(
     @InjectRepository(RestaurantStatEntity)
     private readonly restaurantStatRepository: Repository<RestaurantStatEntity>,
-    private readonly httpService: HttpService,
-    private readonly authService: AuthService,
+    private readonly simCompaniesClient: SimCompaniesClient,
   ) {}
 
   /**
@@ -73,15 +70,7 @@ export class RestaurantStatsService {
     try {
       const url = `https://www.simcompanies.com/api/v2/companies/buildings/${buildingId}/restaurant-runs/`;
 
-      // Obtener los headers necesarios para la petición
-      const headers = await this.authService.getHeaderWithValidCookie();
-
-      // Hacer la petición HTTP usando firstValueFrom para convertir Observable a Promise
-      const response = await firstValueFrom(
-        this.httpService.get<RestaurantStatEntity[]>(url, { headers }),
-      );
-
-      return response.data;
+      return await this.simCompaniesClient.get<RestaurantStatEntity[]>(url);
     } catch (error: unknown) {
       // Manejo de errores específico para Axios
       if (error instanceof AxiosError) {

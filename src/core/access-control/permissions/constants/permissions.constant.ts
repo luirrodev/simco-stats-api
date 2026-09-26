@@ -21,6 +21,9 @@ export const PERMISSIONS = {
     UPDATE: 'users:update',
     DELETE: 'users:delete',
   },
+  SIMCOMPANIES: {
+    READ: 'simcompanies:read',
+  },
 } as const;
 
 export interface PermissionSeed {
@@ -46,4 +49,8 @@ export const PERMISSIONS_SEED: PermissionSeed[] = [
   { name: PERMISSIONS.USERS.CREATE, description: 'Crear usuarios' },
   { name: PERMISSIONS.USERS.UPDATE, description: 'Editar usuarios' },
   { name: PERMISSIONS.USERS.DELETE, description: 'Eliminar usuarios' },
+  {
+    name: PERMISSIONS.SIMCOMPANIES.READ,
+    description: 'Ver estado de la sesión de SimCompanies',
+  },
 ];

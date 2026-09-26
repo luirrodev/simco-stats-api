@@ -1,5 +1,5 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { Job, JobOptions, Queue } from 'bull';
+import type { Job, JobOptions, Queue } from 'bull';
 import { InjectQueue } from '@nestjs/bull';
 import { SaleOrderJobData } from './types/sale-order-job-data.type';
 import { DateTime } from 'luxon';

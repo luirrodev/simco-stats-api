@@ -9,10 +9,10 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { BuildingService } from '../services/building.service';
-import { JWTAuthGuard } from 'src/auth/guards';
+import { StaffJwtAuthGuard } from '@core/auth/guards/staff-jwt-auth.guard';
 
 @Controller('buildings')
-@UseGuards(JWTAuthGuard)
+@UseGuards(StaffJwtAuthGuard)
 export class BuildingController {
   constructor(private readonly buildingService: BuildingService) {}
 
