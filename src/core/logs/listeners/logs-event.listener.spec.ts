@@ -13,7 +13,9 @@ jest.mock('@nestjs/event-emitter', () => ({
 
 describe('LogsEventListener', () => {
   it('enqueues a log with retry and unique job options', async () => {
-    const queue = { add: jest.fn().mockResolvedValue(undefined) } as unknown as Queue;
+    const queue = {
+      add: jest.fn().mockResolvedValue(undefined),
+    } as unknown as Queue;
     const listener = new LogsEventListener(queue);
 
     await listener.handleLogEvent({

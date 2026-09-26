@@ -20,7 +20,10 @@ describe('RequestContextMiddleware', () => {
     middleware.use(request, response, next);
 
     expect(request.requestId).toBe('request-1');
-    expect(response.setHeader).toHaveBeenCalledWith('x-request-id', 'request-1');
+    expect(response.setHeader).toHaveBeenCalledWith(
+      'x-request-id',
+      'request-1',
+    );
     expect(next).toHaveBeenCalledTimes(1);
   });
 });

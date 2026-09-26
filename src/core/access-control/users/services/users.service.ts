@@ -5,12 +5,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import {
-  Repository,
-  Like,
-  FindOptionsOrder,
-  FindOptionsWhere,
-} from 'typeorm';
+import { Repository, Like, FindOptionsOrder, FindOptionsWhere } from 'typeorm';
 import * as bcrypt from 'bcryptjs';
 
 import { User } from '../entities/user.entity';

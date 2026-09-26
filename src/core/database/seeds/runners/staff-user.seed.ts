@@ -25,26 +25,22 @@ export async function seedSuperAdminUser(
 ): Promise<void> {
   const isDev = envOrDefault(process.env.NODE_ENV, 'dev') === 'dev';
 
-  const email =
-    envOrDefault(
-      process.env.SEED_SUPERADMIN_EMAIL,
-      isDev ? DEV_DEFAULTS.email : undefined,
-    );
-  const password =
-    envOrDefault(
-      process.env.SEED_SUPERADMIN_PASSWORD,
-      isDev ? DEV_DEFAULTS.password : undefined,
-    );
-  const firstName =
-    envOrDefault(
-      process.env.SEED_SUPERADMIN_FIRST_NAME,
-      isDev ? DEV_DEFAULTS.firstName : undefined,
-    );
-  const lastName =
-    envOrDefault(
-      process.env.SEED_SUPERADMIN_LAST_NAME,
-      isDev ? DEV_DEFAULTS.lastName : undefined,
-    );
+  const email = envOrDefault(
+    process.env.SEED_SUPERADMIN_EMAIL,
+    isDev ? DEV_DEFAULTS.email : undefined,
+  );
+  const password = envOrDefault(
+    process.env.SEED_SUPERADMIN_PASSWORD,
+    isDev ? DEV_DEFAULTS.password : undefined,
+  );
+  const firstName = envOrDefault(
+    process.env.SEED_SUPERADMIN_FIRST_NAME,
+    isDev ? DEV_DEFAULTS.firstName : undefined,
+  );
+  const lastName = envOrDefault(
+    process.env.SEED_SUPERADMIN_LAST_NAME,
+    isDev ? DEV_DEFAULTS.lastName : undefined,
+  );
 
   if (!email || !password || !firstName || !lastName) {
     throw new Error(

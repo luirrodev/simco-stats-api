@@ -101,9 +101,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 
       return {
         statusCode,
-        message: message
-          ? (message as string | string[])
-          : exception.message,
+        message: message ? (message as string | string[]) : exception.message,
         error: error ? (error as string) : exception.name,
       };
     }

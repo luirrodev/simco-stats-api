@@ -9,12 +9,20 @@ import { LogsPersistenceService } from './logs-persistence.service';
 
 describe('LogsPersistenceService', () => {
   const createService = () => {
-    const logRepository = { insert: jest.fn().mockResolvedValue(undefined) } as unknown as Repository<Log>;
-    const auditRepository = { insert: jest.fn().mockResolvedValue(undefined) } as unknown as Repository<AuditLog>;
+    const logRepository = {
+      insert: jest.fn().mockResolvedValue(undefined),
+    } as unknown as Repository<Log>;
+    const auditRepository = {
+      insert: jest.fn().mockResolvedValue(undefined),
+    } as unknown as Repository<AuditLog>;
     const settings = {
       logs: { batchSize: 1, batchTimeoutMs: 60_000, auditBatchSize: 1 },
     } as unknown as ConfigType<typeof config>;
-    const service = new LogsPersistenceService(logRepository, auditRepository, settings);
+    const service = new LogsPersistenceService(
+      logRepository,
+      auditRepository,
+      settings,
+    );
 
     return { service, logRepository, auditRepository };
   };
@@ -40,7 +48,10 @@ describe('LogsPersistenceService', () => {
 
     expect(logRepository.insert).toHaveBeenCalledTimes(1);
     expect(auditRepository.insert).toHaveBeenCalledWith([
-      expect.objectContaining({ entityName: 'User', loggedAt: expect.any(Date) }),
+      expect.objectContaining({
+        entityName: 'User',
+        loggedAt: expect.any(Date),
+      }),
     ]);
 
     await service.onApplicationShutdown();

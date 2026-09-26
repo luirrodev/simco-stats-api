@@ -27,7 +27,10 @@ export default registerAs('config', () => {
     },
     jwt: {
       accessTokenSecret: envOrDefault(process.env.JWT_ACCESS_SECRET, ''),
-      accessTokenExpiresIn: envOrDefault(process.env.JWT_ACCESS_EXPIRES_IN, '15m'),
+      accessTokenExpiresIn: envOrDefault(
+        process.env.JWT_ACCESS_EXPIRES_IN,
+        '15m',
+      ),
       issuer: envOrDefault(process.env.JWT_ISSUER, ''),
       audience: envOrDefault(process.env.JWT_AUDIENCE, ''),
     },
@@ -71,7 +74,10 @@ export default registerAs('config', () => {
     },
     logs: {
       level: envOrDefault(process.env.LOG_LEVEL, 'log'),
-      retentionDays: parseInt(envOrDefault(process.env.LOG_RETENTION_DAYS, '90'), 10),
+      retentionDays: parseInt(
+        envOrDefault(process.env.LOG_RETENTION_DAYS, '90'),
+        10,
+      ),
       batchSize: parseInt(envOrDefault(process.env.LOG_BATCH_SIZE, '100'), 10),
       auditBatchSize: parseInt(
         envOrDefault(process.env.AUDIT_BATCH_SIZE, '50'),
@@ -82,7 +88,10 @@ export default registerAs('config', () => {
         10,
       ),
       bullQueueName: envOrDefault(process.env.BULL_QUEUE_NAME, 'logs'),
-      bullMaxWorkers: parseInt(envOrDefault(process.env.BULL_MAX_WORKERS, '4'), 10),
+      bullMaxWorkers: parseInt(
+        envOrDefault(process.env.BULL_MAX_WORKERS, '4'),
+        10,
+      ),
     },
     mail: {
       host: envOrDefault(process.env.MAIL_HOST, 'localhost'),

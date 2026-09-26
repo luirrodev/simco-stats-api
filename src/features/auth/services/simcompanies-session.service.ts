@@ -113,8 +113,8 @@ export class SimCompaniesSessionService {
 
   private async renew(): Promise<string> {
     this.renewalPromise ??= this.authenticateAndPersist().finally(() => {
-        this.renewalPromise = null;
-      });
+      this.renewalPromise = null;
+    });
     return this.renewalPromise;
   }
 

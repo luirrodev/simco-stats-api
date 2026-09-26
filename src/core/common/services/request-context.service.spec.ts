@@ -8,10 +8,13 @@ describe('RequestContextService', () => {
   it('propagates context values through synchronous work', () => {
     const service = new RequestContextService();
 
-    const requestId = service.run({ requestId: 'request-1', ip: '127.0.0.1' }, () => ({
-      requestId: service.getRequestId(),
-      ip: service.getIp(),
-    }));
+    const requestId = service.run(
+      { requestId: 'request-1', ip: '127.0.0.1' },
+      () => ({
+        requestId: service.getRequestId(),
+        ip: service.getIp(),
+      }),
+    );
 
     expect(requestId).toEqual({ requestId: 'request-1', ip: '127.0.0.1' });
   });

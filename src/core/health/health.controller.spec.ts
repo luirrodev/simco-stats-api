@@ -23,9 +23,15 @@ describe('HealthController', () => {
         down: (details: unknown) => ({ redis: { status: 'down', ...details } }),
       }),
     } as unknown as HealthIndicatorService;
-    const redis = { ping: jest.fn().mockReturnValue(redisPing) } as unknown as Redis;
+    const redis = {
+      ping: jest.fn().mockReturnValue(redisPing),
+    } as unknown as Redis;
 
-    return { controller: new HealthController(health, database, indicator, redis), health, indicator };
+    return {
+      controller: new HealthController(health, database, indicator, redis),
+      health,
+      indicator,
+    };
   };
 
   it('reports healthy PostgreSQL and Redis checks', async () => {
@@ -48,14 +54,18 @@ describe('HealthController', () => {
 
   it('times out unresolved health dependencies', async () => {
     jest.useFakeTimers();
-    const { controller } = createController(new Promise<string>(() => undefined));
+    const { controller } = createController(
+      new Promise<string>(() => undefined),
+    );
 
     const healthCheck = controller.check();
     await jest.advanceTimersByTimeAsync(4000);
 
     await expect(healthCheck).resolves.toEqual([
       { postgres: { status: 'up' } },
-      expect.objectContaining({ redis: expect.objectContaining({ status: 'down' }) }),
+      expect.objectContaining({
+        redis: expect.objectContaining({ status: 'down' }),
+      }),
     ]);
     jest.useRealTimers();
   });

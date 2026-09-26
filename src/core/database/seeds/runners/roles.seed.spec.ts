@@ -17,9 +17,9 @@ describe('seedSuperAdminRole', () => {
       getRepository: jest.fn().mockReturnValue(repository),
     } as unknown as DataSource;
 
-    await expect(seedSuperAdminRole(dataSource, [{ id: 1 }, { id: 2 }])).resolves.toBe(
-      role,
-    );
+    await expect(
+      seedSuperAdminRole(dataSource, [{ id: 1 }, { id: 2 }]),
+    ).resolves.toBe(role);
 
     expect(repository.save).not.toHaveBeenCalled();
   });

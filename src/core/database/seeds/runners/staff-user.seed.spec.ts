@@ -74,8 +74,8 @@ describe('seedSuperAdminUser', () => {
 
     const { dataSource } = createDataSource(null);
 
-    await expect(seedSuperAdminUser(dataSource, { id: 1 } as Role)).rejects.toThrow(
-      'Faltan variables de entorno',
-    );
+    await expect(
+      seedSuperAdminUser(dataSource, { id: 1 } as Role),
+    ).rejects.toThrow('Faltan variables de entorno');
   });
 });

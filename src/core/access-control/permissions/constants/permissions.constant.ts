@@ -24,6 +24,10 @@ export const PERMISSIONS = {
   SIMCOMPANIES: {
     READ: 'simcompanies:read',
   },
+  BUILDINGS: {
+    READ: 'buildings:read',
+    SYNC: 'buildings:sync',
+  },
 } as const;
 
 export interface PermissionSeed {
@@ -52,5 +56,10 @@ export const PERMISSIONS_SEED: PermissionSeed[] = [
   {
     name: PERMISSIONS.SIMCOMPANIES.READ,
     description: 'Ver estado de la sesión de SimCompanies',
+  },
+  { name: PERMISSIONS.BUILDINGS.READ, description: 'Ver edificios' },
+  {
+    name: PERMISSIONS.BUILDINGS.SYNC,
+    description: 'Sincronizar edificios desde SimCompanies',
   },
 ];

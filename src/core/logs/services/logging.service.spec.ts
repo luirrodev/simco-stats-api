@@ -30,7 +30,11 @@ describe('LoggingService', () => {
     const service = new LoggingService(eventEmitter);
     const error = new Error('database unavailable');
 
-    service.error('operation failed', { requestId: 'request-1', timestamp: new Date() }, error);
+    service.error(
+      'operation failed',
+      { requestId: 'request-1', timestamp: new Date() },
+      error,
+    );
 
     expect(eventEmitter.emit).toHaveBeenCalledWith(
       'logs.create',

@@ -45,11 +45,7 @@ export class LoggingService {
    * Sincrónico - emite el evento y retorna inmediatamente
    * El procesamiento asíncrono ocurre en LogsEventListener
    */
-  log(
-    message: string,
-    context: LogContext,
-    metadata?: JsonObject,
-  ): void {
+  log(message: string, context: LogContext, metadata?: JsonObject): void {
     this.createLog(LogLevel.LOG, message, context, metadata);
   }
 
@@ -57,11 +53,7 @@ export class LoggingService {
    * Log level 'debug'
    * Sincrónico - emite el evento y retorna inmediatamente
    */
-  debug(
-    message: string,
-    context: LogContext,
-    metadata?: JsonObject,
-  ): void {
+  debug(message: string, context: LogContext, metadata?: JsonObject): void {
     this.createLog(LogLevel.DEBUG, message, context, metadata);
   }
 
@@ -69,11 +61,7 @@ export class LoggingService {
    * Log level 'warn'
    * Sincrónico - emite el evento y retorna inmediatamente
    */
-  warn(
-    message: string,
-    context: LogContext,
-    metadata?: JsonObject,
-  ): void {
+  warn(message: string, context: LogContext, metadata?: JsonObject): void {
     this.createLog(LogLevel.WARN, message, context, metadata);
   }
 
@@ -101,9 +89,7 @@ export class LoggingService {
     message: string,
     context: LogContext,
     metadata?: JsonObject,
-    errorData?:
-      | JsonObject
-      | SerializedError,
+    errorData?: JsonObject | SerializedError,
   ): void {
     const logData: LogData = {
       level,
@@ -127,7 +113,9 @@ export class LoggingService {
   /**
    * Formatea un error para almacenamiento
    */
-  private formatError(error?: unknown): JsonObject | SerializedError | undefined {
+  private formatError(
+    error?: unknown,
+  ): JsonObject | SerializedError | undefined {
     if (!error) return undefined;
 
     if (error instanceof Error) {
@@ -175,7 +163,7 @@ export class LoggingService {
       endpoint: `${req.method} ${req.path}`,
       method: req.method,
       ip: this.extractIp(req),
-      userAgent: userAgent === '' ? undefined : userAgent ?? undefined,
+      userAgent: userAgent === '' ? undefined : (userAgent ?? undefined),
       userId: req.user?.sub,
       timestamp: new Date(),
       ...additionalContext,

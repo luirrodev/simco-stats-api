@@ -1,11 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import {
-  FindOptionsOrder,
-  FindOptionsWhere,
-  Like,
-  Repository,
-} from 'typeorm';
+import { FindOptionsOrder, FindOptionsWhere, Like, Repository } from 'typeorm';
 import { Permission } from '../entities/permission.entity';
 import { UpdatePermissionDto } from '../dtos/permission.dto';
 import { PaginationDto, PaginatedResponse } from '@common/dto/pagination.dto';

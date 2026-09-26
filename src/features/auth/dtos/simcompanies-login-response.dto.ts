@@ -1,7 +1,9 @@
 import { ApiProperty } from '@nestjs/swagger';
 
 export class SimCompaniesLoginResponseDto {
-  @ApiProperty({ example: 'SimCompanies authentication completed successfully' })
+  @ApiProperty({
+    example: 'SimCompanies authentication completed successfully',
+  })
   message!: string;
 
   @ApiProperty({ example: '2026-09-25T21:15:00.000Z' })

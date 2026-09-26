@@ -20,7 +20,10 @@ describe('LoggingInterceptor', () => {
       getRequestId: jest.fn().mockReturnValue('request-1'),
     } as unknown as RequestContextService;
 
-    return { interceptor: new LoggingInterceptor(loggingService, requestContext), loggingService };
+    return {
+      interceptor: new LoggingInterceptor(loggingService, requestContext),
+      loggingService,
+    };
   };
 
   const createContext = (path: string) => {

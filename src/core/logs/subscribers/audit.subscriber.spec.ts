@@ -15,7 +15,11 @@ describe('AuditSubscriber', () => {
       getRequestId: jest.fn().mockReturnValue('request-1'),
       get: jest.fn().mockReturnValue(7),
     } as unknown as RequestContextService;
-    const subscriber = new AuditSubscriber(dataSource, persistence, requestContext);
+    const subscriber = new AuditSubscriber(
+      dataSource,
+      persistence,
+      requestContext,
+    );
     const event = {
       metadata: { name: 'User' },
       entity: { id: 3, email: 'ada@example.com' },

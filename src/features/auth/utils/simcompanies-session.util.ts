@@ -44,9 +44,10 @@ export function encryptSessionCookie(
   const iv = randomBytes(12);
   const cipher = createCipheriv('aes-256-gcm', encryptionKey, iv);
   return {
-    ciphertext: Buffer.concat([cipher.update(value, 'utf8'), cipher.final()]).toString(
-      'base64',
-    ),
+    ciphertext: Buffer.concat([
+      cipher.update(value, 'utf8'),
+      cipher.final(),
+    ]).toString('base64'),
     iv: iv.toString('base64'),
     tag: cipher.getAuthTag().toString('base64'),
   };

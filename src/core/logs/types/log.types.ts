@@ -37,9 +37,7 @@ export interface LogData {
   metadata?: JsonObject;
   statusCode?: number;
   duration?: number;
-  error?:
-    | SerializedError
-    | JsonObject;
+  error?: SerializedError | JsonObject;
 }
 
 export interface AuditChangeData {
