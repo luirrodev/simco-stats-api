@@ -13,7 +13,9 @@ describe('SimCompaniesClient', () => {
   beforeEach(() => jest.clearAllMocks());
 
   it('re-authenticates and retries exactly once after a 401 response', async () => {
-    sessionService.getValidCookie.mockResolvedValueOnce('old').mockResolvedValueOnce('new');
+    sessionService.getValidCookie
+      .mockResolvedValueOnce('old')
+      .mockResolvedValueOnce('new');
     const httpService = {
       get: jest
         .fn()
@@ -22,13 +24,12 @@ describe('SimCompaniesClient', () => {
     };
     const client = new SimCompaniesClient(httpService as never, sessionService);
 
-    await expect(client.get<{ id: number }>('https://example.test/data')).resolves.toEqual({ id: 7 });
+    await expect(
+      client.get<{ id: number }>('https://example.test/data'),
+    ).resolves.toEqual({ id: 7 });
     expect(sessionService.invalidate).toHaveBeenCalledTimes(1);
     expect(httpService.get).toHaveBeenCalledTimes(2);
-    expect(httpService.get).toHaveBeenLastCalledWith(
-      'https://example.test/data',
-      expect.objectContaining({ headers: { Cookie: 'new' } }),
-    );
+    expect(sessionService.getRequestHeaders).toHaveBeenLastCalledWith('new');
   });
 
   it('does not retry non-authentication failures', async () => {

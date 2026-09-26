@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
+import { AxiosHeaders } from 'axios';
 import type { AxiosRequestConfig } from 'axios';
 import { firstValueFrom } from 'rxjs';
 
@@ -22,15 +23,17 @@ export class SimCompaniesClient {
     }
   }
 
-  private async request<T>(url: string, options: AxiosRequestConfig): Promise<T> {
+  private async request<T>(
+    url: string,
+    options: AxiosRequestConfig,
+  ): Promise<T> {
     const cookie = await this.sessionService.getValidCookie();
+    const headers = AxiosHeaders.from(options.headers);
+    headers.set(this.sessionService.getRequestHeaders(cookie));
     const response = await firstValueFrom(
       this.httpService.get<T>(url, {
         ...options,
-        headers: {
-          ...(options.headers ?? {}),
-          ...this.sessionService.getRequestHeaders(cookie),
-        },
+        headers,
       }),
     );
     return response.data;

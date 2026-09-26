@@ -2,12 +2,17 @@ import { BadGatewayException, Inject, Injectable } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import type { ConfigType } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
-import { createCipheriv, createDecipheriv, randomBytes } from 'crypto';
 import { firstValueFrom } from 'rxjs';
 import { Repository } from 'typeorm';
 
 import config from '@common/utils/config';
 import { SimCompaniesSession } from '../entities/simcompanies-session.entity';
+import {
+  cookieExpiry,
+  decryptSessionCookie,
+  encryptSessionCookie,
+  serializeSetCookies,
+} from '../utils/simcompanies-session.util';
 
 const SESSION_ID = 'default';
 const BASE_URL = 'https://www.simcompanies.com';
@@ -47,7 +52,14 @@ export class SimCompaniesSessionService {
     const session = await this.findSession();
     if (session && this.isValid(session)) {
       try {
-        return this.decrypt(session);
+        return decryptSessionCookie(
+          {
+            ciphertext: session.encryptedCookie,
+            iv: session.encryptionIv,
+            tag: session.encryptionTag,
+          },
+          this.encryptionKey,
+        );
       } catch {
         await this.invalidate();
       }
@@ -69,20 +81,16 @@ export class SimCompaniesSessionService {
   }
 
   private async renew(): Promise<string> {
-    if (!this.renewalPromise) {
-      this.renewalPromise = this.authenticateAndPersist().finally(() => {
+    this.renewalPromise ??= this.authenticateAndPersist().finally(() => {
         this.renewalPromise = null;
       });
-    }
     return this.renewalPromise;
   }
 
   private async authenticateAndPersist(): Promise<string> {
     const csrfResponse = await this.requestCsrf();
-    const csrfToken = csrfResponse.data?.csrfToken;
-    const csrfCookies = this.serializeCookies(
-      csrfResponse.headers['set-cookie'],
-    );
+    const csrfToken = csrfResponse.data.csrfToken;
+    const csrfCookies = serializeSetCookies(csrfResponse.headers['set-cookie']);
     if (!csrfToken || !csrfCookies) {
       throw new BadGatewayException(
         'SimCompanies returned an invalid CSRF response',
@@ -107,7 +115,7 @@ export class SimCompaniesSessionService {
           },
         ),
       );
-      const sessionCookie = this.serializeCookies(
+      const sessionCookie = serializeSetCookies(
         loginResponse.headers['set-cookie'],
       );
       if (!sessionCookie) {
@@ -118,7 +126,7 @@ export class SimCompaniesSessionService {
 
       await this.persist(
         sessionCookie,
-        this.cookieExpiry(loginResponse.headers['set-cookie']),
+        cookieExpiry(loginResponse.headers['set-cookie']),
       );
       return sessionCookie;
     } catch (error) {
@@ -140,7 +148,7 @@ export class SimCompaniesSessionService {
   }
 
   private async persist(cookie: string, expiresAt: Date | null): Promise<void> {
-    const encrypted = this.encrypt(cookie);
+    const encrypted = encryptSessionCookie(cookie, this.encryptionKey);
     await this.sessionRepository.save({
       id: SESSION_ID,
       encryptedCookie: encrypted.ciphertext,
@@ -165,69 +173,6 @@ export class SimCompaniesSessionService {
       'User-Agent': USER_AGENT,
       'Content-Type': 'application/json',
     };
-  }
-
-  private serializeCookies(setCookie: string[] | string | undefined): string {
-    const values = Array.isArray(setCookie)
-      ? setCookie
-      : setCookie
-        ? [setCookie]
-        : [];
-    const cookies = new Map<string, string>();
-    for (const value of values) {
-      const pair = value.split(';', 1)[0]?.trim();
-      const separator = pair?.indexOf('=') ?? -1;
-      if (pair && separator > 0) cookies.set(pair.slice(0, separator), pair);
-    }
-    return [...cookies.values()].join('; ');
-  }
-
-  private cookieExpiry(setCookie: string[] | string | undefined): Date | null {
-    const values = Array.isArray(setCookie)
-      ? setCookie
-      : setCookie
-        ? [setCookie]
-        : [];
-    const expirations = values.flatMap((value) => {
-      const maxAge = /;\s*Max-Age=(-?\d+)/i.exec(value);
-      if (maxAge) return [new Date(Date.now() + Number(maxAge[1]) * 1000)];
-      const expires = /;\s*Expires=([^;]+)/i.exec(value);
-      const date = expires ? new Date(expires[1]) : null;
-      return date && !Number.isNaN(date.getTime()) ? [date] : [];
-    });
-    return expirations.length
-      ? new Date(Math.min(...expirations.map((date) => date.getTime())))
-      : null;
-  }
-
-  private encrypt(value: string): {
-    ciphertext: string;
-    iv: string;
-    tag: string;
-  } {
-    const iv = randomBytes(12);
-    const cipher = createCipheriv('aes-256-gcm', this.encryptionKey, iv);
-    return {
-      ciphertext: Buffer.concat([
-        cipher.update(value, 'utf8'),
-        cipher.final(),
-      ]).toString('base64'),
-      iv: iv.toString('base64'),
-      tag: cipher.getAuthTag().toString('base64'),
-    };
-  }
-
-  private decrypt(session: SimCompaniesSession): string {
-    const decipher = createDecipheriv(
-      'aes-256-gcm',
-      this.encryptionKey,
-      Buffer.from(session.encryptionIv, 'base64'),
-    );
-    decipher.setAuthTag(Buffer.from(session.encryptionTag, 'base64'));
-    return Buffer.concat([
-      decipher.update(Buffer.from(session.encryptedCookie, 'base64')),
-      decipher.final(),
-    ]).toString('utf8');
   }
 
   getRequestHeaders(cookie: string): Record<string, string> {
