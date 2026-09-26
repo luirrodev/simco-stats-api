@@ -55,12 +55,6 @@ const validationSchema = Joi.object({
       'any.invalid':
         'SIMCOMPANIES_SESSION_ENCRYPTION_KEY must be a base64-encoded 32-byte key',
     }),
-  MAIL_HOST: Joi.string().required(),
-  MAIL_PORT: Joi.number().required(),
-  MAIL_USER: Joi.string().required(),
-  MAIL_PASS: Joi.string().required(),
-  ODDS_API_KEY: Joi.string().required(),
-  ODDS_BOOKMAKERS: Joi.string().required(),
 });
 
 export default validationSchema;
