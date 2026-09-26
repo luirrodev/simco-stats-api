@@ -42,11 +42,15 @@ const validationSchema = Joi.object({
   SIMCOMPANIES_SESSION_ENCRYPTION_KEY: Joi.string()
     .base64()
     .required()
-    .custom((value, helpers) =>
-      Buffer.from(value, 'base64').length === 32
-        ? value
-        : helpers.error('any.invalid'),
-    )
+    .custom((value: unknown, helpers: Joi.CustomHelpers<string>) => {
+      if (
+        typeof value === 'string' &&
+        Buffer.from(value, 'base64').length === 32
+      ) {
+        return value;
+      }
+      return helpers.error('any.invalid');
+    })
     .messages({
       'any.invalid':
         'SIMCOMPANIES_SESSION_ENCRYPTION_KEY must be a base64-encoded 32-byte key',
