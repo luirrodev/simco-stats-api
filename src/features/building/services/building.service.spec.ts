@@ -54,6 +54,15 @@ describe('BuildingService', () => {
       deleted: 1,
       total: 1,
     });
+    expect(client.get).toHaveBeenCalledWith(
+      'https://www.simcompanies.com/api/v2/companies/me/buildings/',
+      {
+        headers: {
+          'x-prot': '0c346342739775fe4ea61331265ccf16',
+          'x-ts': '1790459939388',
+        },
+      },
+    );
     expect(transactionRepository.insert).toHaveBeenCalledWith({
       id: 1,
       name: 'Restaurant',

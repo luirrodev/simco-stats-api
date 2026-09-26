@@ -20,6 +20,10 @@ import { BuildingEntity } from '../entities/building.entity';
 const BUILDINGS_URL =
   'https://www.simcompanies.com/api/v2/companies/me/buildings/';
 const RESTAURANT_KIND = 'r';
+const BUILDINGS_REQUEST_HEADERS = {
+  'x-prot': '0c346342739775fe4ea61331265ccf16',
+  'x-ts': '1790459939388',
+};
 
 @Injectable()
 export class BuildingService {
@@ -100,7 +104,9 @@ export class BuildingService {
   private async fetchRestaurants(): Promise<SimCompaniesBuildingDto[]> {
     let payload: unknown;
     try {
-      payload = await this.simCompaniesClient.get<unknown>(BUILDINGS_URL);
+      payload = await this.simCompaniesClient.get<unknown>(BUILDINGS_URL, {
+        headers: BUILDINGS_REQUEST_HEADERS,
+      });
     } catch (error) {
       if (error instanceof AxiosError && !error.response)
         throw new ServiceUnavailableException(
