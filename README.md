@@ -157,6 +157,9 @@ $ pnpm run migration:gen --name=nombre-de-la-migracion
 # Ejecutar migraciones pendientes
 $ pnpm run migration:run
 
+# Sincronizar permisos, rol y usuario SUPER_ADMIN
+$ pnpm run seed:dev
+
 # Revertir última migración
 $ pnpm run migration:revert
 

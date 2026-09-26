@@ -25,7 +25,10 @@
     "migration:run": "npm run typeorm migration:run",
     "migration:show": "npm run typeorm migration:show",
     "migration:revert": "npm run typeorm migration:revert",
-    "migration:drop": "npm run typeorm schema:drop"
+    "migration:drop": "npm run typeorm schema:drop",
+    "seed": "ts-node -r tsconfig-paths/register src/core/database/seeds/seed.ts",
+    "seed:dev": "NODE_ENV=dev pnpm run seed",
+    "seed:prod": "NODE_ENV=prod pnpm run seed"
   },
   "dependencies": {
     "@nestjs-modules/ioredis": "^2.2.2",
