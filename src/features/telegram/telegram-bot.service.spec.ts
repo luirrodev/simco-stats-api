@@ -2,9 +2,15 @@ import type { Context } from 'telegraf';
 
 import {
   formatRestaurantMenu,
+  formatRestaurantSyncCompletedNotification,
+  formatRestaurantSyncFailedNotification,
   formatRestaurantStatistics,
   TelegramBotService,
 } from './telegram-bot.service';
+
+jest.mock('@nestjs/event-emitter', () => ({
+  OnEvent: () => () => undefined,
+}));
 
 describe('TelegramBotService', () => {
   const restaurantInsightsService = {
@@ -12,6 +18,7 @@ describe('TelegramBotService', () => {
     getRestaurantPortfolioOverview: jest.fn(),
     getRestaurantOverview: jest.fn(),
     getRestaurantRunHistory: jest.fn(),
+    getLatestResolvedRestaurantRun: jest.fn(),
   };
   const appConfig = {
     telegram: { enabled: false, botToken: '', allowedUserIds: [123] },
@@ -241,7 +248,123 @@ describe('TelegramBotService', () => {
       'Aún no hay estadísticas resueltas',
     );
   });
+
+  it('sends a completed-cycle notification to every allowed user', async () => {
+    const { notificationService, sendMessage } = createNotificationService(
+      restaurantInsightsService,
+    );
+    restaurantInsightsService.getLatestResolvedRestaurantRun.mockResolvedValue({
+      restaurant: { id: 5, name: 'Restaurante <Cinco>', size: 4 },
+      stat: createResolvedStat(7),
+    });
+
+    await notificationService.handleRestaurantSyncCompleted({
+      restaurantId: 5,
+    });
+
+    expect(sendMessage).toHaveBeenCalledTimes(2);
+    expect(sendMessage).toHaveBeenCalledWith(
+      123,
+      expect.stringContaining('✅ <b>Nuevo ciclo completado</b>'),
+      { parse_mode: 'HTML' },
+    );
+    expect(sendMessage).toHaveBeenCalledWith(
+      456,
+      expect.stringContaining('🍽️ <b>Restaurante &lt;Cinco&gt;</b>'),
+      { parse_mode: 'HTML' },
+    );
+  });
+
+  it('continues notifying other users when one Telegram delivery fails', async () => {
+    const { notificationService, sendMessage } = createNotificationService(
+      restaurantInsightsService,
+    );
+    restaurantInsightsService.getLatestResolvedRestaurantRun.mockResolvedValue({
+      restaurant: { id: 5, name: 'Restaurante No.5', size: 4 },
+      stat: createResolvedStat(7),
+    });
+    sendMessage.mockRejectedValueOnce(new Error('Blocked by user'));
+
+    await expect(
+      notificationService.handleRestaurantSyncCompleted({ restaurantId: 5 }),
+    ).resolves.toBeUndefined();
+
+    expect(sendMessage).toHaveBeenCalledTimes(2);
+  });
+
+  it('sends a final-failure notification with the summarized error', async () => {
+    const { notificationService, sendMessage } = createNotificationService(
+      restaurantInsightsService,
+    );
+    restaurantInsightsService.getLatestResolvedRestaurantRun.mockResolvedValue({
+      restaurant: { id: 5, name: 'Restaurante No.5', size: 4 },
+      stat: null,
+    });
+
+    await notificationService.handleRestaurantSyncFailed({
+      restaurantId: 5,
+      attempts: 5,
+      errorMessage: 'Servicio no disponible <503>',
+    });
+
+    expect(sendMessage).toHaveBeenCalledWith(
+      123,
+      expect.stringContaining('⚠️ <b>Sincronización fallida</b>'),
+      { parse_mode: 'HTML' },
+    );
+    expect(sendMessage).toHaveBeenCalledWith(
+      456,
+      expect.stringContaining('Error: Servicio no disponible &lt;503&gt;'),
+      { parse_mode: 'HTML' },
+    );
+  });
+
+  it('does not notify when Telegram is disabled', async () => {
+    const sendMessage = jest.fn();
+    Reflect.set(service, 'bot', { telegram: { sendMessage } });
+
+    await service.handleRestaurantSyncCompleted({ restaurantId: 5 });
+
+    expect(
+      restaurantInsightsService.getLatestResolvedRestaurantRun,
+    ).not.toHaveBeenCalled();
+    expect(sendMessage).not.toHaveBeenCalled();
+  });
+
+  it('formats completed and failed synchronization notifications', () => {
+    expect(
+      formatRestaurantSyncCompletedNotification(
+        'Restaurante No.5',
+        createResolvedStat(7),
+      ),
+    ).toContain('💵 Ganancia: 350');
+    expect(
+      formatRestaurantSyncFailedNotification(
+        'Restaurante No.5',
+        5,
+        'Servicio no disponible',
+      ),
+    ).toContain('No se pudo sincronizar tras 5 intentos.');
+  });
 });
+
+function createNotificationService(
+  restaurantInsightsService: Record<string, jest.Mock>,
+) {
+  const notificationService = new TelegramBotService(
+    restaurantInsightsService as never,
+    {
+      telegram: {
+        enabled: true,
+        botToken: 'token',
+        allowedUserIds: [123, 456],
+      },
+    } as never,
+  );
+  const sendMessage = jest.fn().mockResolvedValue({});
+  Reflect.set(notificationService, 'bot', { telegram: { sendMessage } });
+  return { notificationService, sendMessage };
+}
 
 function createResolvedStat(id: number) {
   return {

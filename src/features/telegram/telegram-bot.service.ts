@@ -5,6 +5,7 @@ import {
   OnApplicationShutdown,
   OnModuleInit,
 } from '@nestjs/common';
+import { OnEvent } from '@nestjs/event-emitter';
 import type { ConfigType } from '@nestjs/config';
 import { Context, Markup, Telegraf } from 'telegraf';
 
@@ -17,6 +18,14 @@ import {
   RestaurantRun,
 } from '@features/restaurant-insights/contracts/restaurant-insights.contract';
 import { RestaurantInsightsService } from '@features/restaurant-insights/services/restaurant-insights.service';
+import {
+  RESTAURANT_SYNC_COMPLETED_EVENT,
+  RESTAURANT_SYNC_FAILED_EVENT,
+} from '@features/restaurant-stats/queues/restaurant-sync.constants';
+import type {
+  RestaurantSyncCompletedEvent,
+  RestaurantSyncFailedEvent,
+} from '@features/restaurant-stats/queues/restaurant-sync.constants';
 
 const RESTAURANTS_PER_PAGE = 8;
 const RESTAURANT_CALLBACK_PREFIX = 'restaurant:';
@@ -147,6 +156,63 @@ export class TelegramBotService implements OnModuleInit, OnApplicationShutdown {
     await ctx.reply('Usa /restaurantes para consultar las estadísticas.');
   }
 
+  @OnEvent(RESTAURANT_SYNC_COMPLETED_EVENT)
+  async handleRestaurantSyncCompleted(
+    event: RestaurantSyncCompletedEvent,
+  ): Promise<void> {
+    if (!this.appConfig.telegram.enabled || !this.bot) return;
+
+    try {
+      const latest =
+        await this.restaurantInsightsService.getLatestResolvedRestaurantRun(
+          event.restaurantId,
+        );
+      if (!latest.stat) {
+        this.logger.warn(
+          `No resolved restaurant cycle is available for notification (${event.restaurantId})`,
+        );
+        return;
+      }
+      await this.sendToAllowedUsers(
+        formatRestaurantSyncCompletedNotification(
+          latest.restaurant.name,
+          latest.stat,
+        ),
+      );
+    } catch (error) {
+      this.logNotificationError(
+        `Unable to send completed synchronization notification for restaurant ${event.restaurantId}`,
+        error,
+      );
+    }
+  }
+
+  @OnEvent(RESTAURANT_SYNC_FAILED_EVENT)
+  async handleRestaurantSyncFailed(
+    event: RestaurantSyncFailedEvent,
+  ): Promise<void> {
+    if (!this.appConfig.telegram.enabled || !this.bot) return;
+
+    try {
+      const latest =
+        await this.restaurantInsightsService.getLatestResolvedRestaurantRun(
+          event.restaurantId,
+        );
+      await this.sendToAllowedUsers(
+        formatRestaurantSyncFailedNotification(
+          latest.restaurant.name,
+          event.attempts,
+          event.errorMessage,
+        ),
+      );
+    } catch (error) {
+      this.logNotificationError(
+        `Unable to send failed synchronization notification for restaurant ${event.restaurantId}`,
+        error,
+      );
+    }
+  }
+
   private registerHandlers(bot: Telegraf): void {
     bot.start((ctx) => this.handleStart(ctx));
     bot.command('restaurantes', (ctx) => this.handleRestaurants(ctx));
@@ -170,6 +236,29 @@ export class TelegramBotService implements OnModuleInit, OnApplicationShutdown {
         error instanceof Error ? error.stack : undefined,
       );
     });
+  }
+
+  private async sendToAllowedUsers(message: string): Promise<void> {
+    const bot = this.bot;
+    if (!bot) return;
+
+    for (const userId of this.appConfig.telegram.allowedUserIds) {
+      try {
+        await bot.telegram.sendMessage(userId, message, { parse_mode: 'HTML' });
+      } catch (error) {
+        this.logNotificationError(
+          `Unable to send restaurant synchronization notification to Telegram user ${userId}`,
+          error,
+        );
+      }
+    }
+  }
+
+  private logNotificationError(message: string, error: unknown): void {
+    this.logger.error(
+      message,
+      error instanceof Error ? error.stack : String(error),
+    );
   }
 
   private async ensureAllowed(
@@ -289,6 +378,33 @@ export function formatRestaurantStatistics(
     '',
     '━━━━━━━━━━━━━━━━━━',
     ...stats.map((stat) => formatRestaurantStatistic(stat)),
+  ].join('\n');
+}
+
+export function formatRestaurantSyncCompletedNotification(
+  restaurantName: string,
+  stat: RestaurantRun,
+): string {
+  return [
+    '✅ <b>Nuevo ciclo completado</b>',
+    '',
+    `🍽️ <b>${escapeHtml(restaurantName)}</b>`,
+    '━━━━━━━━━━━━━━━━━━',
+    formatRestaurantStatistic(stat),
+  ].join('\n');
+}
+
+export function formatRestaurantSyncFailedNotification(
+  restaurantName: string,
+  attempts: number,
+  errorMessage: string,
+): string {
+  return [
+    '⚠️ <b>Sincronización fallida</b>',
+    '',
+    `🍽️ <b>${escapeHtml(restaurantName)}</b>`,
+    `No se pudo sincronizar tras ${attempts} intentos.`,
+    `Error: ${escapeHtml(errorMessage)}`,
   ].join('\n');
 }
 
