@@ -148,16 +148,16 @@ describe('BuildingService', () => {
 
   it('lists restaurants alphabetically for Telegram', async () => {
     repository.find.mockResolvedValue([
-      { id: 2, name: 'Bistró' },
-      { id: 1, name: 'Alameda' },
+      { id: 2, name: 'Bistró', size: 10 },
+      { id: 1, name: 'Alameda', size: 20 },
     ]);
 
     await expect(service.listRestaurantsForTelegram()).resolves.toEqual([
-      { id: 2, name: 'Bistró' },
-      { id: 1, name: 'Alameda' },
+      { id: 2, name: 'Bistró', size: 10 },
+      { id: 1, name: 'Alameda', size: 20 },
     ]);
     expect(repository.find).toHaveBeenCalledWith({
-      select: { id: true, name: true },
+      select: { id: true, name: true, size: true },
       where: { kind: 'r' },
       order: { name: 'ASC', id: 'ASC' },
     });

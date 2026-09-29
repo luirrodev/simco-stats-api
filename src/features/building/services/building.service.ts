@@ -69,10 +69,10 @@ export class BuildingService {
   }
 
   async listRestaurantsForTelegram(): Promise<
-    Pick<BuildingEntity, 'id' | 'name'>[]
+    Pick<BuildingEntity, 'id' | 'name' | 'size'>[]
   > {
     return this.buildingRepository.find({
-      select: { id: true, name: true },
+      select: { id: true, name: true, size: true },
       where: { kind: RESTAURANT_KIND },
       order: { name: 'ASC', id: 'ASC' },
     });
