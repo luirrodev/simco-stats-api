@@ -68,16 +68,6 @@ export class BuildingService {
     return building;
   }
 
-  async listRestaurantsForTelegram(): Promise<
-    Pick<BuildingEntity, 'id' | 'name' | 'size'>[]
-  > {
-    return this.buildingRepository.find({
-      select: { id: true, name: true, size: true },
-      where: { kind: RESTAURANT_KIND },
-      order: { name: 'ASC', id: 'ASC' },
-    });
-  }
-
   async syncBuildingsFromApi(): Promise<BuildingsSyncResponseDto> {
     const restaurants = await this.fetchRestaurants();
     return this.buildingRepository.manager.transaction(async (manager) => {
