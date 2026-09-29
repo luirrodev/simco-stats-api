@@ -7,6 +7,7 @@ import { RestaurantStatEntity } from '@features/restaurant-stats/entities/restau
 import {
   PaginatedResult,
   RestaurantListItem,
+  RestaurantLatestResolvedRun,
   RestaurantOverview,
   RestaurantPageRequest,
   RestaurantPortfolioOverview,
@@ -87,6 +88,20 @@ export class RestaurantInsightsService {
     return {
       restaurant: toRestaurantListItem(restaurant),
       ...toPaginatedResult(stats.map(toRestaurantRun), total, page, limit),
+    };
+  }
+
+  async getLatestResolvedRestaurantRun(
+    restaurantId: number,
+  ): Promise<RestaurantLatestResolvedRun> {
+    const restaurant = await this.getRestaurant(restaurantId);
+    const stat = await this.restaurantStatRepository.findOne({
+      where: { restaurantId, resolved: true },
+      order: { datetime: 'DESC' },
+    });
+    return {
+      restaurant: toRestaurantListItem(restaurant),
+      stat: stat ? toRestaurantRun(stat) : null,
     };
   }
 

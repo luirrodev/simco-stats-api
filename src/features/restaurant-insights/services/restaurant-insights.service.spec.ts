@@ -25,6 +25,7 @@ describe('RestaurantInsightsService', () => {
   } as unknown as jest.Mocked<Repository<BuildingEntity>>;
   const restaurantStatRepository = {
     findAndCount: jest.fn(),
+    findOne: jest.fn(),
     createQueryBuilder: jest.fn(() => queryBuilder),
   } as unknown as jest.Mocked<Repository<RestaurantStatEntity>>;
   const service = new RestaurantInsightsService(
@@ -159,6 +160,20 @@ describe('RestaurantInsightsService', () => {
       order: { datetime: 'DESC' },
       skip: 0,
       take: 4,
+    });
+  });
+
+  it('returns the latest resolved cycle for a synchronization notification', async () => {
+    buildingRepository.findOneBy.mockResolvedValue(restaurant);
+    restaurantStatRepository.findOne.mockResolvedValue(resolvedRun);
+
+    await expect(service.getLatestResolvedRestaurantRun(12)).resolves.toEqual({
+      restaurant: { id: 12, name: 'La Terraza', size: 10 },
+      stat: expect.objectContaining({ id: 101, resolved: true }),
+    });
+    expect(restaurantStatRepository.findOne).toHaveBeenCalledWith({
+      where: { restaurantId: 12, resolved: true },
+      order: { datetime: 'DESC' },
     });
   });
 
