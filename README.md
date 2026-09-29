@@ -128,8 +128,11 @@ TELEGRAM_ALLOWED_USER_IDS=
 
 ### Bot privado de Telegram
 
-El bot consulta las estadísticas que ya están sincronizadas en la base de
-datos; no solicita datos a SimCompanies cuando respondes un mensaje.
+Al seleccionar un restaurante, el bot muestra sus ganancias acumuladas de las
+últimas 24 horas, 72 horas y siete días. Desde ese menú puedes abrir el
+historial completo de corridas resueltas, paginado de cuatro en cuatro, usando
+datos ya sincronizados en la base de datos. No solicita datos a SimCompanies
+cuando respondes un mensaje.
 
 1. Abre `@BotFather` en Telegram, ejecuta `/newbot` y conserva el token que
    entrega en privado.
