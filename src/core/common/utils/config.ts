@@ -103,5 +103,13 @@ export default registerAs('config', () => {
       apiKey: process.env.ODDS_API_KEY,
       bookmakers: envOrDefault(process.env.ODDS_BOOKMAKERS, ''),
     },
+    telegram: {
+      enabled: process.env.TELEGRAM_BOT_ENABLED === 'true',
+      botToken: envOrDefault(process.env.TELEGRAM_BOT_TOKEN, ''),
+      allowedUserIds: envOrDefault(process.env.TELEGRAM_ALLOWED_USER_IDS, '')
+        .split(',')
+        .filter(Boolean)
+        .map(Number),
+    },
   };
 });

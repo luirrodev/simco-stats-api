@@ -119,7 +119,34 @@ SIMCOMPANIES_SESSION_ENCRYPTION_KEY=una_clave_base64_de_32_bytes
 
 # Configuración opcional
 NODE_ENV=dev
+
+# Bot privado de Telegram (opcional)
+TELEGRAM_BOT_ENABLED=false
+TELEGRAM_BOT_TOKEN=
+TELEGRAM_ALLOWED_USER_IDS=
 ```
+
+### Bot privado de Telegram
+
+El bot consulta las estadísticas que ya están sincronizadas en la base de
+datos; no solicita datos a SimCompanies cuando respondes un mensaje.
+
+1. Abre `@BotFather` en Telegram, ejecuta `/newbot` y conserva el token que
+   entrega en privado.
+2. Obtén tu ID numérico de Telegram y configura las variables en `.env.dev`:
+
+   ```bash
+   TELEGRAM_BOT_ENABLED=true
+   TELEGRAM_BOT_TOKEN=token_entregado_por_botfather
+   TELEGRAM_ALLOWED_USER_IDS=tu_id_numerico
+   ```
+
+3. Asegúrate de sincronizar primero edificios y estadísticas con los endpoints
+   de la API. Después inicia una conversación con el bot y envía
+   `/restaurantes`.
+
+El bot usa _long polling_, por lo que no necesita una URL pública ni HTTPS,
+pero solo una instancia de la API puede usar el mismo token a la vez.
 
 ### Instalación
 

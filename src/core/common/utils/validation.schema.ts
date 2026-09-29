@@ -55,6 +55,22 @@ const validationSchema = Joi.object({
       'any.invalid':
         'SIMCOMPANIES_SESSION_ENCRYPTION_KEY must be a base64-encoded 32-byte key',
     }),
+  TELEGRAM_BOT_ENABLED: Joi.boolean()
+    .truthy('true')
+    .falsy('false')
+    .default(false),
+  TELEGRAM_BOT_TOKEN: Joi.when('TELEGRAM_BOT_ENABLED', {
+    is: true,
+    then: Joi.string().min(1).required(),
+    otherwise: Joi.string().allow('').optional(),
+  }),
+  TELEGRAM_ALLOWED_USER_IDS: Joi.when('TELEGRAM_BOT_ENABLED', {
+    is: true,
+    then: Joi.string()
+      .pattern(/^\d+(,\d+)*$/)
+      .required(),
+    otherwise: Joi.string().allow('').optional(),
+  }),
 });
 
 export default validationSchema;
