@@ -6,9 +6,16 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { AxiosError } from 'axios';
-import { FindOptionsWhere, In, Repository } from 'typeorm';
+import {
+  FindOptionsWhere,
+  In,
+  IsNull,
+  MoreThanOrEqual,
+  Not,
+  Repository,
+} from 'typeorm';
 
-import { PaginatedResponse } from '@common/dto/pagination.dto';
+import type { PaginatedResponse } from '@common/dto/pagination.dto';
 import { SimCompaniesClient } from '@features/auth/services/simcompanies-client.service';
 import { BuildingEntity } from '@features/building/entities/building.entity';
 import {
@@ -20,6 +27,7 @@ import {
 import { RestaurantStatEntity } from '../entities/restaurant-stat.entity';
 
 const RESTAURANT_KIND = 'r';
+const TELEGRAM_STATS_PER_PAGE = 4;
 
 @Injectable()
 export class RestaurantStatsService {
@@ -73,11 +81,41 @@ export class RestaurantStatsService {
     return stat;
   }
 
-  async getLatestRestaurantStat(
+  async getRecentRestaurantStats(
     restaurantId: number,
-  ): Promise<RestaurantStatEntity | null> {
-    return this.restaurantStatRepository.findOne({
-      where: { restaurantId },
+  ): Promise<RestaurantStatEntity[]> {
+    return this.restaurantStatRepository.find({
+      where: { restaurantId, resolved: true },
+      order: { datetime: 'DESC' },
+      take: 5,
+    });
+  }
+
+  async getResolvedRestaurantStatsPage(
+    restaurantId: number,
+    page: number,
+  ): Promise<PaginatedResponse<RestaurantStatEntity>> {
+    return this.getRestaurantStats({
+      restaurantId,
+      resolved: true,
+      page,
+      limit: TELEGRAM_STATS_PER_PAGE,
+      sortBy: 'datetime' as RestaurantStatsQueryDto['sortBy'],
+      sortDir: 'DESC' as RestaurantStatsQueryDto['sortDir'],
+    });
+  }
+
+  async getRestaurantStatsSince(
+    restaurantId: number,
+    from: Date,
+  ): Promise<RestaurantStatEntity[]> {
+    return this.restaurantStatRepository.find({
+      where: {
+        restaurantId,
+        datetime: MoreThanOrEqual(from),
+        resolved: true,
+        revenue: Not(IsNull()),
+      },
       order: { datetime: 'DESC' },
     });
   }
