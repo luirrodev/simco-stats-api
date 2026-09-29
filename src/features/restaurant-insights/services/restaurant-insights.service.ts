@@ -9,6 +9,7 @@ import {
   RestaurantListItem,
   RestaurantOverview,
   RestaurantPageRequest,
+  RestaurantPortfolioOverview,
   RestaurantProfitSummary,
   RestaurantRun,
   RestaurantRunHistory,
@@ -58,8 +59,14 @@ export class RestaurantInsightsService {
     now: Date,
   ): Promise<RestaurantOverview> {
     const restaurant = await this.getRestaurant(restaurantId);
-    const profits = await this.getProfitSummary(restaurantId, now);
+    const profits = await this.getProfitSummary(now, restaurantId);
     return { restaurant: toRestaurantListItem(restaurant), profits };
+  }
+
+  async getRestaurantPortfolioOverview(
+    now: Date,
+  ): Promise<RestaurantPortfolioOverview> {
+    return { profits: await this.getProfitSummary(now) };
   }
 
   async getRestaurantRunHistory(
@@ -95,13 +102,13 @@ export class RestaurantInsightsService {
   }
 
   private async getProfitSummary(
-    restaurantId: number,
     now: Date,
+    restaurantId?: number,
   ): Promise<RestaurantProfitSummary> {
     const last24Hours = new Date(now.getTime() - DAY_IN_MS);
     const last72Hours = new Date(now.getTime() - 3 * DAY_IN_MS);
     const last7Days = new Date(now.getTime() - 7 * DAY_IN_MS);
-    const row = await this.restaurantStatRepository
+    const query = this.restaurantStatRepository
       .createQueryBuilder('stat')
       .select(
         'COALESCE(SUM(CASE WHEN stat.datetime >= :last24Hours THEN stat.revenue - stat.cogs - stat.wages ELSE 0 END), 0)',
@@ -114,8 +121,23 @@ export class RestaurantInsightsService {
       .addSelect(
         'COALESCE(SUM(stat.revenue - stat.cogs - stat.wages), 0)',
         'last7Days',
-      )
-      .where('stat.restaurantId = :restaurantId', { restaurantId })
+      );
+
+    if (restaurantId === undefined) {
+      query
+        .innerJoin(
+          BuildingEntity,
+          'restaurant',
+          'restaurant.id = stat.restaurantId',
+        )
+        .where('restaurant.kind = :restaurantKind', {
+          restaurantKind: RESTAURANT_KIND,
+        });
+    } else {
+      query.where('stat.restaurantId = :restaurantId', { restaurantId });
+    }
+
+    const row = await query
       .andWhere('stat.resolved = :resolved', { resolved: true })
       .andWhere('stat.revenue IS NOT NULL')
       .andWhere('stat.datetime >= :last7Days', { last7Days })

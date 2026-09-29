@@ -9,6 +9,7 @@ describe('RestaurantInsightsService', () => {
   const queryBuilder = {
     select: jest.fn(),
     addSelect: jest.fn(),
+    innerJoin: jest.fn(),
     where: jest.fn(),
     andWhere: jest.fn(),
     setParameters: jest.fn(),
@@ -80,6 +81,36 @@ describe('RestaurantInsightsService', () => {
     });
     expect(restaurantStatRepository.createQueryBuilder).toHaveBeenCalledWith(
       'stat',
+    );
+    expect(queryBuilder.andWhere).toHaveBeenCalledWith(
+      'stat.resolved = :resolved',
+      { resolved: true },
+    );
+    expect(queryBuilder.andWhere).toHaveBeenCalledWith(
+      'stat.revenue IS NOT NULL',
+    );
+  });
+
+  it('builds a global profit overview for active restaurants only', async () => {
+    queryBuilder.getRawOne.mockResolvedValue({
+      last24Hours: '1000',
+      last72Hours: '2500',
+      last7Days: '6000',
+    });
+
+    await expect(
+      service.getRestaurantPortfolioOverview(new Date('2026-09-29T12:00:00Z')),
+    ).resolves.toEqual({
+      profits: { last24Hours: 1000, last72Hours: 2500, last7Days: 6000 },
+    });
+    expect(queryBuilder.innerJoin).toHaveBeenCalledWith(
+      BuildingEntity,
+      'restaurant',
+      'restaurant.id = stat.restaurantId',
+    );
+    expect(queryBuilder.where).toHaveBeenCalledWith(
+      'restaurant.kind = :restaurantKind',
+      { restaurantKind: 'r' },
     );
     expect(queryBuilder.andWhere).toHaveBeenCalledWith(
       'stat.resolved = :resolved',

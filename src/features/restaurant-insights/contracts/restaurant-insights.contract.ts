@@ -30,6 +30,10 @@ export interface RestaurantOverview {
   profits: RestaurantProfitSummary;
 }
 
+export interface RestaurantPortfolioOverview {
+  profits: RestaurantProfitSummary;
+}
+
 export type RestaurantRunResolution = 'resolved' | 'all';
 
 export interface RestaurantRunHistoryRequest extends RestaurantPageRequest {
