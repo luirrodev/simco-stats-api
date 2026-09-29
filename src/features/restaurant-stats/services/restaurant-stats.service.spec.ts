@@ -1,4 +1,5 @@
 import { BadGatewayException, NotFoundException } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import type { Repository } from 'typeorm';
 
 import { SimCompaniesClient } from '@features/auth/services/simcompanies-client.service';
@@ -48,10 +49,14 @@ describe('RestaurantStatsService', () => {
   const client = {
     get: jest.fn(),
   } as unknown as jest.Mocked<SimCompaniesClient>;
+  const eventEmitter = {
+    emitAsync: jest.fn().mockResolvedValue([]),
+  } as unknown as jest.Mocked<EventEmitter2>;
   const service = new RestaurantStatsService(
     statsRepository,
     buildingsRepository,
     client,
+    eventEmitter,
   );
 
   beforeEach(() => jest.clearAllMocks());
@@ -86,6 +91,13 @@ describe('RestaurantStatsService', () => {
         review: null,
       }),
     ]);
+    expect(eventEmitter.emitAsync).toHaveBeenCalledWith(
+      'restaurant-stats.synchronized',
+      expect.objectContaining({
+        restaurantId: 12,
+        latestCycleStartedAt: new Date(openRun.datetime),
+      }),
+    );
   });
 
   it('updates an existing cycle when SimCompanies resolves it without changing its snapshot', async () => {

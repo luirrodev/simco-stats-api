@@ -4,6 +4,7 @@ import {
   NotFoundException,
   ServiceUnavailableException,
 } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { InjectRepository } from '@nestjs/typeorm';
 import { AxiosError } from 'axios';
 import { FindOptionsWhere, In, Repository } from 'typeorm';
@@ -18,6 +19,10 @@ import {
   SimCompaniesRestaurantRunDto,
 } from '../dtos/restaurant-stat.dto';
 import { RestaurantStatEntity } from '../entities/restaurant-stat.entity';
+import {
+  RESTAURANT_STATS_SYNCED_EVENT,
+} from '../queues/restaurant-sync.constants';
+import type { RestaurantStatsSynchronizedEvent } from '../queues/restaurant-sync.constants';
 
 const RESTAURANT_KIND = 'r';
 
@@ -29,6 +34,7 @@ export class RestaurantStatsService {
     @InjectRepository(BuildingEntity)
     private readonly buildingRepository: Repository<BuildingEntity>,
     private readonly simCompaniesClient: SimCompaniesClient,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   async getRestaurantStats(
@@ -79,7 +85,7 @@ export class RestaurantStatsService {
     const restaurant = await this.getActiveRestaurant(restaurantId);
     const runs = await this.fetchRestaurantRuns(restaurantId);
 
-    return this.restaurantStatRepository.manager.transaction(
+    const result = await this.restaurantStatRepository.manager.transaction(
       async (manager) => {
         const repository = manager.getRepository(RestaurantStatEntity);
         const existingStats = runs.length
@@ -122,6 +128,18 @@ export class RestaurantStatsService {
         };
       },
     );
+    if (runs.length) {
+      const latestCycleStartedAt = runs.reduce((latest, run) => {
+        const datetime = new Date(run.datetime);
+        return datetime > latest ? datetime : latest;
+      }, new Date(runs[0].datetime));
+      const event: RestaurantStatsSynchronizedEvent = {
+        restaurantId,
+        latestCycleStartedAt,
+      };
+      await this.eventEmitter.emitAsync(RESTAURANT_STATS_SYNCED_EVENT, event);
+    }
+    return result;
   }
 
   async syncAllRestaurantRuns(): Promise<RestaurantStatsSyncAllResponseDto> {
