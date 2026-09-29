@@ -22,10 +22,12 @@ export interface RestaurantStatsSynchronizedEvent {
 
 export interface RestaurantSyncCompletedEvent {
   restaurantId: number;
+  cycleStartedAt: string;
 }
 
 export interface RestaurantSyncFailedEvent {
   restaurantId: number;
+  cycleStartedAt: string;
   attempts: number;
   errorMessage: string;
 }
