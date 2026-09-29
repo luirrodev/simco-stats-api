@@ -9,6 +9,11 @@ jest.mock('@nestjs/swagger', () => ({
   ApiTags: () => () => undefined,
 }));
 
+jest.mock('@nestjs/event-emitter', () => ({
+  EventEmitter2: jest.fn(),
+  OnEvent: () => () => undefined,
+}));
+
 import { PERMISSIONS_KEY } from '@common/decorators/permissions.decorator';
 import { PERMISSIONS } from '@core/access-control/permissions/constants/permissions.constant';
 import { RestaurantStatsController } from './restaurant-stats.controller';
