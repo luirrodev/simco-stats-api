@@ -14,5 +14,6 @@ import { RestaurantStatsService } from './services/restaurant-stats.service';
   ],
   controllers: [RestaurantStatsController],
   providers: [RestaurantStatsService],
+  exports: [RestaurantStatsService],
 })
 export class RestaurantStatsModule {}
