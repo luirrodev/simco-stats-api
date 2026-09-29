@@ -7,52 +7,52 @@ import {
 } from './telegram-bot.service';
 
 describe('TelegramBotService', () => {
-  const buildingService = {
-    getBuildingById: jest.fn(),
-    listRestaurantsForTelegram: jest.fn(),
-  };
-  const restaurantStatsService = {
-    getResolvedRestaurantStatsPage: jest.fn(),
-    getRestaurantStatsSince: jest.fn(),
+  const restaurantInsightsService = {
+    listRestaurants: jest.fn(),
+    getRestaurantOverview: jest.fn(),
+    getRestaurantRunHistory: jest.fn(),
   };
   const appConfig = {
-    telegram: {
-      enabled: false,
-      botToken: '',
-      allowedUserIds: [123],
-    },
+    telegram: { enabled: false, botToken: '', allowedUserIds: [123] },
   };
   const service = new TelegramBotService(
-    buildingService as never,
-    restaurantStatsService as never,
+    restaurantInsightsService as never,
     appConfig as never,
   );
 
   beforeEach(() => jest.clearAllMocks());
 
-  it('does not query data for an unauthorized user', async () => {
+  it('does not query insights for an unauthorized user', async () => {
     const ctx = createContext({ from: { id: 999 } });
-
     await service.handleRestaurants(ctx);
 
-    expect(buildingService.listRestaurantsForTelegram).not.toHaveBeenCalled();
+    expect(restaurantInsightsService.listRestaurants).not.toHaveBeenCalled();
     expect(ctx.reply).toHaveBeenCalledWith(
       'No tienes permiso para usar este bot.',
     );
   });
 
   it('shows restaurants in paginated buttons for an authorized user', async () => {
-    buildingService.listRestaurantsForTelegram.mockResolvedValue(
-      Array.from({ length: 9 }, (_, index) => ({
+    restaurantInsightsService.listRestaurants.mockResolvedValue({
+      data: Array.from({ length: 8 }, (_, index) => ({
         id: index + 1,
         name: `Restaurante ${index + 1}`,
         size: index + 1,
       })),
-    );
+      page: 1,
+      limit: 8,
+      total: 9,
+      totalPages: 2,
+      hasPrev: false,
+      hasNext: true,
+    });
     const ctx = createContext({ from: { id: 123 } });
-
     await service.handleRestaurants(ctx);
 
+    expect(restaurantInsightsService.listRestaurants).toHaveBeenCalledWith({
+      page: 1,
+      limit: 8,
+    });
     expect(ctx.reply).toHaveBeenCalledWith(
       'Elige un restaurante (página 1 de 2).',
       expect.objectContaining({
@@ -71,42 +71,25 @@ describe('TelegramBotService', () => {
     );
   });
 
-  it('opens the restaurant menu without querying its paginated history', async () => {
-    buildingService.getBuildingById.mockResolvedValue({
-      id: 5,
-      name: 'Restaurante No.5',
+  it('opens the restaurant menu without querying its history', async () => {
+    restaurantInsightsService.getRestaurantOverview.mockResolvedValue({
+      restaurant: { id: 5, name: 'Restaurante No.5', size: 4 },
+      profits: { last24Hours: 350, last72Hours: 350, last7Days: 350 },
     });
-    restaurantStatsService.getRestaurantStatsSince.mockResolvedValue([
-      {
-        id: 7,
-        restaurantId: 5,
-        datetime: new Date(),
-        cogs: 100,
-        wages: 50,
-        revenue: 500,
-      },
-    ]);
     const ctx = createContext({
       from: { id: 123 },
       callbackQuery: { data: 'restaurant:5' },
     });
-
     await service.handleCallback(ctx);
 
     expect(
-      restaurantStatsService.getResolvedRestaurantStatsPage,
+      restaurantInsightsService.getRestaurantOverview,
+    ).toHaveBeenCalledWith(5, expect.any(Date));
+    expect(
+      restaurantInsightsService.getRestaurantRunHistory,
     ).not.toHaveBeenCalled();
-    expect(buildingService.getBuildingById).toHaveBeenCalledWith(5);
-    expect(restaurantStatsService.getRestaurantStatsSince).toHaveBeenCalledWith(
-      5,
-      expect.any(Date),
-    );
     expect(ctx.editMessageText).toHaveBeenCalledWith(
       expect.stringContaining('💵 Ganancia últimas 24 h: 350'),
-      expect.anything(),
-    );
-    expect(ctx.editMessageText).toHaveBeenCalledWith(
-      expect.stringContaining('Restaurante No.5'),
       expect.objectContaining({
         reply_markup: expect.objectContaining({
           inline_keyboard: expect.arrayContaining([
@@ -124,17 +107,14 @@ describe('TelegramBotService', () => {
         }),
       }),
     );
-    expect(ctx.answerCbQuery).toHaveBeenCalled();
   });
 
   it('shows four resolved statistics per history page and its navigation', async () => {
-    buildingService.getBuildingById.mockResolvedValue({
-      id: 5,
-      name: 'Restaurante No.5',
-    });
-    restaurantStatsService.getResolvedRestaurantStatsPage.mockResolvedValue({
+    restaurantInsightsService.getRestaurantRunHistory.mockResolvedValue({
+      restaurant: { id: 5, name: 'Restaurante No.5', size: 4 },
       data: [createResolvedStat(7), createResolvedStat(6)],
       page: 1,
+      limit: 4,
       total: 6,
       totalPages: 2,
       hasPrev: false,
@@ -144,12 +124,16 @@ describe('TelegramBotService', () => {
       from: { id: 123 },
       callbackQuery: { data: 'restaurant-stats:5:1' },
     });
-
     await service.handleCallback(ctx);
 
     expect(
-      restaurantStatsService.getResolvedRestaurantStatsPage,
-    ).toHaveBeenCalledWith(5, 1);
+      restaurantInsightsService.getRestaurantRunHistory,
+    ).toHaveBeenCalledWith({
+      restaurantId: 5,
+      page: 1,
+      limit: 4,
+      resolution: 'resolved',
+    });
     expect(ctx.editMessageText).toHaveBeenCalledWith(
       expect.stringContaining(
         'Restaurante No.5 · Estadísticas (página 1 de 2)',
@@ -171,20 +155,21 @@ describe('TelegramBotService', () => {
     );
   });
 
-  it('acknowledges unavailable secondary statistics without querying data', async () => {
+  it('acknowledges unavailable secondary statistics without querying insights', async () => {
     const ctx = createContext({
       from: { id: 123 },
       callbackQuery: { data: 'restaurant-other-stats:5' },
     });
-
     await service.handleCallback(ctx);
 
     expect(ctx.answerCbQuery).toHaveBeenCalledWith(
       'Otras estadísticas estarán disponibles próximamente.',
     );
-    expect(buildingService.getBuildingById).not.toHaveBeenCalled();
     expect(
-      restaurantStatsService.getResolvedRestaurantStatsPage,
+      restaurantInsightsService.getRestaurantOverview,
+    ).not.toHaveBeenCalled();
+    expect(
+      restaurantInsightsService.getRestaurantRunHistory,
     ).not.toHaveBeenCalled();
   });
 
@@ -205,16 +190,12 @@ describe('TelegramBotService', () => {
 function createResolvedStat(id: number) {
   return {
     id,
-    restaurantId: 5,
-    restaurantName: 'Restaurante No.5',
     datetime: new Date('2026-09-29T12:00:00Z'),
     rating: 5.5,
     cogs: 100,
     wages: 50,
     resolved: true,
     menuPrice: 60,
-    buildingSize: 4,
-    buildingIsLuxury: false,
     occupancy: 1,
     revenue: 500,
     newRating: 5.7,

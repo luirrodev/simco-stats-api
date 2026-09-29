@@ -1,11 +1,10 @@
 import { Module } from '@nestjs/common';
 
-import { BuildingModule } from '@features/building/building.module';
-import { RestaurantStatsModule } from '@features/restaurant-stats/restaurant-stats.module';
+import { RestaurantInsightsModule } from '@features/restaurant-insights/restaurant-insights.module';
 import { TelegramBotService } from './telegram-bot.service';
 
 @Module({
-  imports: [BuildingModule, RestaurantStatsModule],
+  imports: [RestaurantInsightsModule],
   providers: [TelegramBotService],
 })
 export class TelegramModule {}

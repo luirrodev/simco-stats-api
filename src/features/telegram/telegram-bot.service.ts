@@ -9,14 +9,15 @@ import type { ConfigType } from '@nestjs/config';
 import { Context, Markup, Telegraf } from 'telegraf';
 
 import config from '@common/utils/config';
-import { BuildingEntity } from '@features/building/entities/building.entity';
-import { BuildingService } from '@features/building/services/building.service';
-import { RestaurantStatEntity } from '@features/restaurant-stats/entities/restaurant-stat.entity';
-import { RestaurantStatsService } from '@features/restaurant-stats/services/restaurant-stats.service';
+import {
+  PaginatedResult,
+  RestaurantListItem,
+  RestaurantProfitSummary,
+  RestaurantRun,
+} from '@features/restaurant-insights/contracts/restaurant-insights.contract';
+import { RestaurantInsightsService } from '@features/restaurant-insights/services/restaurant-insights.service';
 
 const RESTAURANTS_PER_PAGE = 8;
-const HOUR_IN_MS = 60 * 60 * 1000;
-const DAY_IN_MS = 24 * HOUR_IN_MS;
 const RESTAURANT_CALLBACK_PREFIX = 'restaurant:';
 const RESTAURANTS_CALLBACK_PREFIX = 'restaurants:';
 const RESTAURANT_STATS_CALLBACK_PREFIX = 'restaurant-stats:';
@@ -28,8 +29,7 @@ export class TelegramBotService implements OnModuleInit, OnApplicationShutdown {
   private bot?: Telegraf;
 
   constructor(
-    private readonly buildingService: BuildingService,
-    private readonly restaurantStatsService: RestaurantStatsService,
+    private readonly restaurantInsightsService: RestaurantInsightsService,
     @Inject(config.KEY)
     private readonly appConfig: ConfigType<typeof config>,
   ) {}
@@ -58,7 +58,10 @@ export class TelegramBotService implements OnModuleInit, OnApplicationShutdown {
 
   async handleRestaurants(ctx: Context, requestedPage = 0): Promise<void> {
     if (!(await this.ensureAllowed(ctx))) return;
-    const restaurants = await this.buildingService.listRestaurantsForTelegram();
+    const restaurants = await this.restaurantInsightsService.listRestaurants({
+      page: requestedPage + 1,
+      limit: RESTAURANTS_PER_PAGE,
+    });
     await this.replyRestaurantList(ctx, restaurants, requestedPage);
   }
 
@@ -75,8 +78,10 @@ export class TelegramBotService implements OnModuleInit, OnApplicationShutdown {
         await ctx.answerCbQuery('Página inválida');
         return;
       }
-      const restaurants =
-        await this.buildingService.listRestaurantsForTelegram();
+      const restaurants = await this.restaurantInsightsService.listRestaurants({
+        page: page + 1,
+        limit: RESTAURANTS_PER_PAGE,
+      });
       await ctx.answerCbQuery();
       await this.editRestaurantList(ctx, restaurants, page);
       return;
@@ -95,17 +100,17 @@ export class TelegramBotService implements OnModuleInit, OnApplicationShutdown {
         await ctx.answerCbQuery('Estadísticas inválidas');
         return;
       }
-      const [restaurant, statistics] = await Promise.all([
-        this.buildingService.getBuildingById(parsed.restaurantId),
-        this.restaurantStatsService.getResolvedRestaurantStatsPage(
-          parsed.restaurantId,
-          parsed.page,
-        ),
-      ]);
+      const statistics =
+        await this.restaurantInsightsService.getRestaurantRunHistory({
+          restaurantId: parsed.restaurantId,
+          page: parsed.page,
+          limit: 4,
+          resolution: 'resolved',
+        });
       await ctx.answerCbQuery();
       await ctx.editMessageText(
         formatRestaurantStatistics(
-          restaurant.name,
+          statistics.restaurant.name,
           statistics.data,
           statistics.page,
           statistics.totalPages,
@@ -127,20 +132,14 @@ export class TelegramBotService implements OnModuleInit, OnApplicationShutdown {
         await ctx.answerCbQuery('Restaurante inválido');
         return;
       }
-      const now = new Date();
-      const [restaurant, profitStats] = await Promise.all([
-        this.buildingService.getBuildingById(restaurantId),
-        this.restaurantStatsService.getRestaurantStatsSince(
+      const overview =
+        await this.restaurantInsightsService.getRestaurantOverview(
           restaurantId,
-          new Date(now.getTime() - 7 * DAY_IN_MS),
-        ),
-      ]);
+          new Date(),
+        );
       await ctx.answerCbQuery();
       await ctx.editMessageText(
-        formatRestaurantMenu(
-          restaurant.name,
-          summarizeProfits(profitStats, now),
-        ),
+        formatRestaurantMenu(overview.restaurant.name, overview.profits),
         restaurantMenuKeyboard(restaurantId),
       );
     }
@@ -206,32 +205,46 @@ export class TelegramBotService implements OnModuleInit, OnApplicationShutdown {
 
   private async replyRestaurantList(
     ctx: Context,
-    restaurants: Pick<BuildingEntity, 'id' | 'name' | 'size'>[],
+    restaurants: PaginatedResult<RestaurantListItem>,
     requestedPage: number,
   ): Promise<void> {
-    const page = normalizePage(restaurants.length, requestedPage);
     await ctx.reply(
-      restaurantListText(restaurants.length, page),
-      restaurantListKeyboard(restaurants, page),
+      restaurantListText(
+        restaurants.total,
+        requestedPage,
+        restaurants.totalPages,
+      ),
+      restaurantListKeyboard(
+        restaurants.data,
+        requestedPage,
+        restaurants.totalPages,
+      ),
     );
   }
 
   private async editRestaurantList(
     ctx: Context,
-    restaurants: Pick<BuildingEntity, 'id' | 'name' | 'size'>[],
+    restaurants: PaginatedResult<RestaurantListItem>,
     requestedPage: number,
   ): Promise<void> {
-    const page = normalizePage(restaurants.length, requestedPage);
     await ctx.editMessageText(
-      restaurantListText(restaurants.length, page),
-      restaurantListKeyboard(restaurants, page),
+      restaurantListText(
+        restaurants.total,
+        requestedPage,
+        restaurants.totalPages,
+      ),
+      restaurantListKeyboard(
+        restaurants.data,
+        requestedPage,
+        restaurants.totalPages,
+      ),
     );
   }
 }
 
 export function formatRestaurantMenu(
   restaurantName: string,
-  profitSummary: ProfitSummary,
+  profitSummary: RestaurantProfitSummary,
 ): string {
   return [
     restaurantName,
@@ -243,7 +256,7 @@ export function formatRestaurantMenu(
 
 export function formatRestaurantStatistics(
   restaurantName: string,
-  stats: RestaurantStatEntity[],
+  stats: RestaurantRun[],
   page: number,
   totalPages: number,
 ): string {
@@ -259,31 +272,7 @@ export function formatRestaurantStatistics(
   ].join('\n');
 }
 
-interface ProfitSummary {
-  last24Hours: number;
-  last72Hours: number;
-  last7Days: number;
-}
-
-function summarizeProfits(
-  stats: RestaurantStatEntity[],
-  now: Date,
-): ProfitSummary {
-  const nowMs = now.getTime();
-  return stats.reduce<ProfitSummary>(
-    (summary, stat) => {
-      const age = nowMs - stat.datetime.getTime();
-      const profit = (stat.revenue ?? 0) - stat.cogs - stat.wages;
-      if (age <= DAY_IN_MS) summary.last24Hours += profit;
-      if (age <= 3 * DAY_IN_MS) summary.last72Hours += profit;
-      if (age <= 7 * DAY_IN_MS) summary.last7Days += profit;
-      return summary;
-    },
-    { last24Hours: 0, last72Hours: 0, last7Days: 0 },
-  );
-}
-
-function formatRestaurantStatistic(stat: RestaurantStatEntity): string {
+function formatRestaurantStatistic(stat: RestaurantRun): string {
   const ratingChange =
     stat.newRating === null
       ? 'Pendiente'
@@ -303,26 +292,27 @@ function formatRestaurantStatistic(stat: RestaurantStatEntity): string {
   ].join('\n');
 }
 
-function restaurantListText(total: number, page: number): string {
+function restaurantListText(
+  total: number,
+  page: number,
+  totalPages: number,
+): string {
   if (!total) return 'No hay restaurantes sincronizados todavía.';
-  const totalPages = Math.ceil(total / RESTAURANTS_PER_PAGE);
   return `Elige un restaurante (página ${page + 1} de ${totalPages}).`;
 }
 
 function restaurantListKeyboard(
-  restaurants: Pick<BuildingEntity, 'id' | 'name' | 'size'>[],
+  restaurants: RestaurantListItem[],
   page: number,
+  totalPages: number,
 ) {
   if (!restaurants.length) return undefined;
-  const totalPages = Math.ceil(restaurants.length / RESTAURANTS_PER_PAGE);
-  const buttons = restaurants
-    .slice(page * RESTAURANTS_PER_PAGE, (page + 1) * RESTAURANTS_PER_PAGE)
-    .map((restaurant) => [
-      Markup.button.callback(
-        truncateButtonLabel(`${restaurant.name} (lvl ${restaurant.size})`),
-        `${RESTAURANT_CALLBACK_PREFIX}${restaurant.id}`,
-      ),
-    ]);
+  const buttons = restaurants.map((restaurant) => [
+    Markup.button.callback(
+      truncateButtonLabel(`${restaurant.name} (lvl ${restaurant.size})`),
+      `${RESTAURANT_CALLBACK_PREFIX}${restaurant.id}`,
+    ),
+  ]);
   const navigation: (typeof buttons)[number] = [];
   if (page > 0)
     navigation.push(
@@ -402,14 +392,6 @@ function restaurantStatisticsKeyboard(
     ),
   ]);
   return Markup.inlineKeyboard(buttons);
-}
-
-function normalizePage(total: number, requestedPage: number): number {
-  if (!total) return 0;
-  return Math.min(
-    Math.max(requestedPage, 0),
-    Math.ceil(total / RESTAURANTS_PER_PAGE) - 1,
-  );
 }
 
 function parseRestaurantStatsCallback(
