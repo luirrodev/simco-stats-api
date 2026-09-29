@@ -20,6 +20,7 @@ describe('BuildingService', () => {
       callback(transactionManager),
   );
   const repository = {
+    find: jest.fn(),
     findAndCount: jest.fn(),
     findOneBy: jest.fn(),
     manager: {
@@ -143,5 +144,22 @@ describe('BuildingService', () => {
     await expect(service.getBuildingById(99)).rejects.toBeInstanceOf(
       NotFoundException,
     );
+  });
+
+  it('lists restaurants alphabetically for Telegram', async () => {
+    repository.find.mockResolvedValue([
+      { id: 2, name: 'Bistró' },
+      { id: 1, name: 'Alameda' },
+    ]);
+
+    await expect(service.listRestaurantsForTelegram()).resolves.toEqual([
+      { id: 2, name: 'Bistró' },
+      { id: 1, name: 'Alameda' },
+    ]);
+    expect(repository.find).toHaveBeenCalledWith({
+      select: { id: true, name: true },
+      where: { kind: 'r' },
+      order: { name: 'ASC', id: 'ASC' },
+    });
   });
 });
