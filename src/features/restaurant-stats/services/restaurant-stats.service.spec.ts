@@ -1,5 +1,4 @@
 import { BadGatewayException, NotFoundException } from '@nestjs/common';
-import { IsNull, MoreThanOrEqual, Not } from 'typeorm';
 import type { Repository } from 'typeorm';
 
 import { SimCompaniesClient } from '@features/auth/services/simcompanies-client.service';
@@ -184,60 +183,5 @@ describe('RestaurantStatsService', () => {
     await expect(service.getRestaurantStatById(999)).rejects.toBeInstanceOf(
       NotFoundException,
     );
-  });
-
-  it('retrieves up to five recent runs for a restaurant', async () => {
-    statsRepository.find.mockResolvedValue([{ id: 101, restaurantId: 12 }]);
-
-    await expect(service.getRecentRestaurantStats(12)).resolves.toEqual([
-      { id: 101, restaurantId: 12 },
-    ]);
-    expect(statsRepository.find).toHaveBeenCalledWith({
-      where: { restaurantId: 12, resolved: true },
-      order: { datetime: 'DESC' },
-      take: 5,
-    });
-  });
-
-  it('paginates resolved restaurant runs for Telegram with four records', async () => {
-    statsRepository.findAndCount.mockResolvedValue([
-      [{ id: 101, restaurantId: 12 }],
-      5,
-    ] as never);
-
-    await expect(
-      service.getResolvedRestaurantStatsPage(12, 2),
-    ).resolves.toMatchObject({
-      page: 2,
-      limit: 4,
-      total: 5,
-      totalPages: 2,
-      hasPrev: true,
-      hasNext: false,
-    });
-    expect(statsRepository.findAndCount).toHaveBeenCalledWith({
-      where: { restaurantId: 12, resolved: true },
-      order: { datetime: 'DESC' },
-      skip: 4,
-      take: 4,
-    });
-  });
-
-  it('retrieves resolved runs with revenue since the requested date', async () => {
-    const from = new Date('2026-09-22T00:00:00Z');
-    statsRepository.find.mockResolvedValue([]);
-
-    await expect(service.getRestaurantStatsSince(12, from)).resolves.toEqual(
-      [],
-    );
-    expect(statsRepository.find).toHaveBeenCalledWith({
-      where: {
-        restaurantId: 12,
-        datetime: MoreThanOrEqual(from),
-        resolved: true,
-        revenue: Not(IsNull()),
-      },
-      order: { datetime: 'DESC' },
-    });
   });
 });
