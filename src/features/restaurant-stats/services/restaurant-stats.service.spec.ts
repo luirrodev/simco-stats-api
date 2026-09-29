@@ -37,6 +37,7 @@ describe('RestaurantStatsService', () => {
   );
   const statsRepository = {
     findAndCount: jest.fn(),
+    findOne: jest.fn(),
     findOneBy: jest.fn(),
     manager: { transaction },
   } as unknown as jest.Mocked<Repository<RestaurantStatEntity>>;
@@ -182,5 +183,18 @@ describe('RestaurantStatsService', () => {
     await expect(service.getRestaurantStatById(999)).rejects.toBeInstanceOf(
       NotFoundException,
     );
+  });
+
+  it('retrieves the most recent run for a restaurant', async () => {
+    statsRepository.findOne.mockResolvedValue({ id: 101, restaurantId: 12 });
+
+    await expect(service.getLatestRestaurantStat(12)).resolves.toEqual({
+      id: 101,
+      restaurantId: 12,
+    });
+    expect(statsRepository.findOne).toHaveBeenCalledWith({
+      where: { restaurantId: 12 },
+      order: { datetime: 'DESC' },
+    });
   });
 });

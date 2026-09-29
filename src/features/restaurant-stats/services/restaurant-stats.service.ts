@@ -73,6 +73,15 @@ export class RestaurantStatsService {
     return stat;
   }
 
+  async getLatestRestaurantStat(
+    restaurantId: number,
+  ): Promise<RestaurantStatEntity | null> {
+    return this.restaurantStatRepository.findOne({
+      where: { restaurantId },
+      order: { datetime: 'DESC' },
+    });
+  }
+
   async syncRestaurantRuns(
     restaurantId: number,
   ): Promise<RestaurantStatsSyncResponseDto> {
