@@ -24,6 +24,7 @@ import { StaffModule } from '@core/access-control/staff/staff.module';
 import { SimCompaniesAuthModule } from '@features/auth/auth.module';
 import { BuildingModule } from '@features/building/building.module';
 import { RestaurantStatsModule } from '@features/restaurant-stats/restaurant-stats.module';
+import { TelegramModule } from '@features/telegram/telegram.module';
 
 // Modulos Features
 
@@ -57,6 +58,7 @@ import { RestaurantStatsModule } from '@features/restaurant-stats/restaurant-sta
     SimCompaniesAuthModule,
     BuildingModule,
     RestaurantStatsModule,
+    TelegramModule,
   ],
   controllers: [],
   providers: [
