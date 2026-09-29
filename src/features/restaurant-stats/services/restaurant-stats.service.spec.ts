@@ -1,11 +1,16 @@
 import { BadGatewayException, NotFoundException } from '@nestjs/common';
-import { EventEmitter2 } from '@nestjs/event-emitter';
+import type { EventEmitter2 } from '@nestjs/event-emitter';
 import type { Repository } from 'typeorm';
 
 import { SimCompaniesClient } from '@features/auth/services/simcompanies-client.service';
 import { BuildingEntity } from '@features/building/entities/building.entity';
 import { RestaurantStatEntity } from '../entities/restaurant-stat.entity';
 import { RestaurantStatsService } from './restaurant-stats.service';
+
+jest.mock('@nestjs/event-emitter', () => ({
+  EventEmitter2: jest.fn(),
+  OnEvent: () => () => undefined,
+}));
 
 const restaurant = { id: 12, name: 'La Terraza', kind: 'r' } as BuildingEntity;
 const openRun = {

@@ -19,9 +19,7 @@ import {
   SimCompaniesRestaurantRunDto,
 } from '../dtos/restaurant-stat.dto';
 import { RestaurantStatEntity } from '../entities/restaurant-stat.entity';
-import {
-  RESTAURANT_STATS_SYNCED_EVENT,
-} from '../queues/restaurant-sync.constants';
+import { RESTAURANT_STATS_SYNCED_EVENT } from '../queues/restaurant-sync.constants';
 import type { RestaurantStatsSynchronizedEvent } from '../queues/restaurant-sync.constants';
 
 const RESTAURANT_KIND = 'r';
