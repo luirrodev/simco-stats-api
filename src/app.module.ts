@@ -23,6 +23,7 @@ import { AuthModule } from '@core/auth/auth.module';
 import { StaffModule } from '@core/access-control/staff/staff.module';
 import { SimCompaniesAuthModule } from '@features/auth/auth.module';
 import { BuildingModule } from '@features/building/building.module';
+import { RestaurantStatsModule } from '@features/restaurant-stats/restaurant-stats.module';
 
 // Modulos Features
 
@@ -55,6 +56,7 @@ import { BuildingModule } from '@features/building/building.module';
     StaffModule,
     SimCompaniesAuthModule,
     BuildingModule,
+    RestaurantStatsModule,
   ],
   controllers: [],
   providers: [
