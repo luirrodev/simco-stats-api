@@ -23,8 +23,10 @@ describe('TelegramBotService', () => {
   const appConfig = {
     telegram: { enabled: false, botToken: '', allowedUserIds: [123] },
   };
+  const notificationQueue = { add: jest.fn() };
   const service = new TelegramBotService(
     restaurantInsightsService as never,
+    notificationQueue as never,
     appConfig as never,
   );
 
@@ -250,7 +252,7 @@ describe('TelegramBotService', () => {
   });
 
   it('sends a completed-cycle notification to every allowed user', async () => {
-    const { notificationService, sendMessage } = createNotificationService(
+    const { notificationService, queue } = createNotificationService(
       restaurantInsightsService,
     );
     restaurantInsightsService.getLatestResolvedRestaurantRun.mockResolvedValue({
@@ -260,40 +262,52 @@ describe('TelegramBotService', () => {
 
     await notificationService.handleRestaurantSyncCompleted({
       restaurantId: 5,
+      cycleStartedAt: '2026-09-29T12:00:00.000Z',
     });
 
-    expect(sendMessage).toHaveBeenCalledTimes(2);
-    expect(sendMessage).toHaveBeenCalledWith(
-      123,
-      expect.stringContaining('✅ <b>Nuevo ciclo completado</b>'),
-      { parse_mode: 'HTML' },
+    expect(queue.add).toHaveBeenCalledTimes(2);
+    expect(queue.add).toHaveBeenCalledWith(
+      'send-notification',
+      expect.objectContaining({
+        recipientId: 123,
+        message: expect.stringContaining('✅ <b>Nuevo ciclo completado</b>'),
+      }),
+      expect.objectContaining({
+        jobId: 'telegram-notification-completed-5-1790683200000-123',
+        attempts: 2_147_483_647,
+        backoff: { type: 'fixed', delay: 5 * 60 * 1000 },
+      }),
     );
-    expect(sendMessage).toHaveBeenCalledWith(
-      456,
-      expect.stringContaining('🍽️ <b>Restaurante &lt;Cinco&gt;</b>'),
-      { parse_mode: 'HTML' },
+    expect(queue.add).toHaveBeenCalledWith(
+      'send-notification',
+      expect.objectContaining({
+        recipientId: 456,
+        message: expect.stringContaining('🍽️ <b>Restaurante &lt;Cinco&gt;</b>'),
+      }),
+      expect.any(Object),
     );
   });
 
-  it('continues notifying other users when one Telegram delivery fails', async () => {
-    const { notificationService, sendMessage } = createNotificationService(
+  it('creates independent jobs for each allowed user', async () => {
+    const { notificationService, queue } = createNotificationService(
       restaurantInsightsService,
     );
     restaurantInsightsService.getLatestResolvedRestaurantRun.mockResolvedValue({
       restaurant: { id: 5, name: 'Restaurante No.5', size: 4 },
       stat: createResolvedStat(7),
     });
-    sendMessage.mockRejectedValueOnce(new Error('Blocked by user'));
-
     await expect(
-      notificationService.handleRestaurantSyncCompleted({ restaurantId: 5 }),
+      notificationService.handleRestaurantSyncCompleted({
+        restaurantId: 5,
+        cycleStartedAt: '2026-09-29T12:00:00.000Z',
+      }),
     ).resolves.toBeUndefined();
 
-    expect(sendMessage).toHaveBeenCalledTimes(2);
+    expect(queue.add).toHaveBeenCalledTimes(2);
   });
 
   it('sends a final-failure notification with the summarized error', async () => {
-    const { notificationService, sendMessage } = createNotificationService(
+    const { notificationService, queue } = createNotificationService(
       restaurantInsightsService,
     );
     restaurantInsightsService.getLatestResolvedRestaurantRun.mockResolvedValue({
@@ -303,32 +317,43 @@ describe('TelegramBotService', () => {
 
     await notificationService.handleRestaurantSyncFailed({
       restaurantId: 5,
+      cycleStartedAt: '2026-09-29T12:00:00.000Z',
       attempts: 5,
       errorMessage: 'Servicio no disponible <503>',
     });
 
-    expect(sendMessage).toHaveBeenCalledWith(
-      123,
-      expect.stringContaining('⚠️ <b>Sincronización fallida</b>'),
-      { parse_mode: 'HTML' },
+    expect(queue.add).toHaveBeenCalledWith(
+      'send-notification',
+      expect.objectContaining({
+        recipientId: 123,
+        message: expect.stringContaining('⚠️ <b>Sincronización fallida</b>'),
+      }),
+      expect.any(Object),
     );
-    expect(sendMessage).toHaveBeenCalledWith(
-      456,
-      expect.stringContaining('Error: Servicio no disponible &lt;503&gt;'),
-      { parse_mode: 'HTML' },
+    expect(queue.add).toHaveBeenCalledWith(
+      'send-notification',
+      expect.objectContaining({
+        recipientId: 456,
+        message: expect.stringContaining(
+          'Error: Servicio no disponible &lt;503&gt;',
+        ),
+      }),
+      expect.any(Object),
     );
   });
 
   it('does not notify when Telegram is disabled', async () => {
-    const sendMessage = jest.fn();
-    Reflect.set(service, 'bot', { telegram: { sendMessage } });
+    Reflect.set(service, 'bot', { telegram: { sendMessage: jest.fn() } });
 
-    await service.handleRestaurantSyncCompleted({ restaurantId: 5 });
+    await service.handleRestaurantSyncCompleted({
+      restaurantId: 5,
+      cycleStartedAt: '2026-09-29T12:00:00.000Z',
+    });
 
     expect(
       restaurantInsightsService.getLatestResolvedRestaurantRun,
     ).not.toHaveBeenCalled();
-    expect(sendMessage).not.toHaveBeenCalled();
+    expect(notificationQueue.add).not.toHaveBeenCalled();
   });
 
   it('formats completed and failed synchronization notifications', () => {
@@ -351,8 +376,10 @@ describe('TelegramBotService', () => {
 function createNotificationService(
   restaurantInsightsService: Record<string, jest.Mock>,
 ) {
+  const queue = { add: jest.fn().mockResolvedValue({}) };
   const notificationService = new TelegramBotService(
     restaurantInsightsService as never,
+    queue as never,
     {
       telegram: {
         enabled: true,
@@ -361,9 +388,8 @@ function createNotificationService(
       },
     } as never,
   );
-  const sendMessage = jest.fn().mockResolvedValue({});
-  Reflect.set(notificationService, 'bot', { telegram: { sendMessage } });
-  return { notificationService, sendMessage };
+  Reflect.set(notificationService, 'bot', { telegram: {} });
+  return { notificationService, queue };
 }
 
 function createResolvedStat(id: number) {
