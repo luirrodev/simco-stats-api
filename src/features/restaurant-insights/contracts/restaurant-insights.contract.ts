@@ -57,3 +57,8 @@ export interface RestaurantRun {
 export interface RestaurantRunHistory extends PaginatedResult<RestaurantRun> {
   restaurant: RestaurantListItem;
 }
+
+export interface RestaurantLatestResolvedRun {
+  restaurant: RestaurantListItem;
+  stat: RestaurantRun | null;
+}
