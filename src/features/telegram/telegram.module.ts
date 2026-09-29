@@ -6,5 +6,6 @@ import { TelegramBotService } from './telegram-bot.service';
 @Module({
   imports: [RestaurantInsightsModule],
   providers: [TelegramBotService],
+  exports: [TelegramBotService],
 })
 export class TelegramModule {}
