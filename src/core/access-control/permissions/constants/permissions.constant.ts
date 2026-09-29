@@ -28,6 +28,10 @@ export const PERMISSIONS = {
     READ: 'buildings:read',
     SYNC: 'buildings:sync',
   },
+  RESTAURANT_STATS: {
+    READ: 'restaurant-stats:read',
+    SYNC: 'restaurant-stats:sync',
+  },
 } as const;
 
 export interface PermissionSeed {
@@ -61,5 +65,13 @@ export const PERMISSIONS_SEED: PermissionSeed[] = [
   {
     name: PERMISSIONS.BUILDINGS.SYNC,
     description: 'Sincronizar edificios desde SimCompanies',
+  },
+  {
+    name: PERMISSIONS.RESTAURANT_STATS.READ,
+    description: 'Ver estadísticas de restaurantes',
+  },
+  {
+    name: PERMISSIONS.RESTAURANT_STATS.SYNC,
+    description: 'Sincronizar estadísticas de restaurantes',
   },
 ];
