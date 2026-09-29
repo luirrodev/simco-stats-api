@@ -1,15 +1,22 @@
 import { Injectable } from '@nestjs/common';
 import { Process, Processor } from '@nestjs/bull';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import type bull from 'bull';
 
 import { LoggingService } from '@core/logs/services/logging.service';
 import { RestaurantStatsService } from '../services/restaurant-stats.service';
 import {
   RESTAURANT_SYNC_ATTEMPTS,
+  RESTAURANT_SYNC_COMPLETED_EVENT,
+  RESTAURANT_SYNC_FAILED_EVENT,
   RESTAURANT_SYNC_JOB,
   RESTAURANT_SYNC_QUEUE,
 } from './restaurant-sync.constants';
-import type { RestaurantSyncJobData } from './restaurant-sync.constants';
+import type {
+  RestaurantSyncCompletedEvent,
+  RestaurantSyncFailedEvent,
+  RestaurantSyncJobData,
+} from './restaurant-sync.constants';
 import { RestaurantSyncScheduler } from './restaurant-sync.scheduler';
 
 @Processor(RESTAURANT_SYNC_QUEUE)
@@ -19,6 +26,7 @@ export class RestaurantSyncProcessor {
     private readonly restaurantStatsService: RestaurantStatsService,
     private readonly restaurantSyncScheduler: RestaurantSyncScheduler,
     private readonly loggingService: LoggingService,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   @Process({ name: RESTAURANT_SYNC_JOB, concurrency: 1 })
@@ -39,6 +47,10 @@ export class RestaurantSyncProcessor {
         updated: result.updated,
         total: result.total,
       });
+      const event: RestaurantSyncCompletedEvent = {
+        restaurantId: job.data.restaurantId,
+      };
+      this.eventEmitter.emit(RESTAURANT_SYNC_COMPLETED_EVENT, event);
     } catch (error) {
       if (attempt >= RESTAURANT_SYNC_ATTEMPTS) {
         this.log(
@@ -51,6 +63,12 @@ export class RestaurantSyncProcessor {
           job.data.restaurantId,
           new Date(job.data.cycleStartedAt),
         );
+        const event: RestaurantSyncFailedEvent = {
+          restaurantId: job.data.restaurantId,
+          attempts: RESTAURANT_SYNC_ATTEMPTS,
+          errorMessage: this.getErrorMessage(error),
+        };
+        this.eventEmitter.emit(RESTAURANT_SYNC_FAILED_EVENT, event);
       } else {
         this.log(
           'warn',

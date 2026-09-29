@@ -1,4 +1,5 @@
 import type bull from 'bull';
+import type { EventEmitter2 } from '@nestjs/event-emitter';
 
 import { LoggingService } from '@core/logs/services/logging.service';
 import { RestaurantStatsService } from '../services/restaurant-stats.service';
@@ -27,10 +28,14 @@ describe('RestaurantSyncProcessor', () => {
     warn: jest.fn(),
     error: jest.fn(),
   } as unknown as jest.Mocked<LoggingService>;
+  const eventEmitter = {
+    emit: jest.fn(),
+  } as unknown as jest.Mocked<EventEmitter2>;
   const processor = new RestaurantSyncProcessor(
     restaurantStatsService,
     scheduler,
     logging,
+    eventEmitter,
   );
 
   const createJob = (attemptsMade: number) =>
@@ -66,6 +71,10 @@ describe('RestaurantSyncProcessor', () => {
       expect.objectContaining({ attempt: 1, created: 1, updated: 2, total: 3 }),
     );
     expect(scheduler.scheduleFollowingCycle).not.toHaveBeenCalled();
+    expect(eventEmitter.emit).toHaveBeenCalledWith(
+      'restaurant-sync.completed',
+      { restaurantId: 12 },
+    );
   });
 
   it('logs a retry before the fifth attempt', async () => {
@@ -86,6 +95,7 @@ describe('RestaurantSyncProcessor', () => {
       }),
     );
     expect(scheduler.scheduleFollowingCycle).not.toHaveBeenCalled();
+    expect(eventEmitter.emit).not.toHaveBeenCalled();
   });
 
   it('schedules the following cycle after the fifth failed attempt', async () => {
@@ -106,5 +116,10 @@ describe('RestaurantSyncProcessor', () => {
       12,
       new Date('2026-09-29T06:00:00.000Z'),
     );
+    expect(eventEmitter.emit).toHaveBeenCalledWith('restaurant-sync.failed', {
+      restaurantId: 12,
+      attempts: RESTAURANT_SYNC_ATTEMPTS,
+      errorMessage: 'SimCompanies unavailable',
+    });
   });
 });
