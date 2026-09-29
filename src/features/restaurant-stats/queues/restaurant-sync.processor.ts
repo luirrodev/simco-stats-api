@@ -49,6 +49,7 @@ export class RestaurantSyncProcessor {
       });
       const event: RestaurantSyncCompletedEvent = {
         restaurantId: job.data.restaurantId,
+        cycleStartedAt: job.data.cycleStartedAt,
       };
       this.eventEmitter.emit(RESTAURANT_SYNC_COMPLETED_EVENT, event);
     } catch (error) {
@@ -65,6 +66,7 @@ export class RestaurantSyncProcessor {
         );
         const event: RestaurantSyncFailedEvent = {
           restaurantId: job.data.restaurantId,
+          cycleStartedAt: job.data.cycleStartedAt,
           attempts: RESTAURANT_SYNC_ATTEMPTS,
           errorMessage: this.getErrorMessage(error),
         };

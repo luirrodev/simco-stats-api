@@ -73,7 +73,10 @@ describe('RestaurantSyncProcessor', () => {
     expect(scheduler.scheduleFollowingCycle).not.toHaveBeenCalled();
     expect(eventEmitter.emit).toHaveBeenCalledWith(
       'restaurant-sync.completed',
-      { restaurantId: 12 },
+      {
+        restaurantId: 12,
+        cycleStartedAt: '2026-09-29T06:00:00.000Z',
+      },
     );
   });
 
@@ -118,6 +121,7 @@ describe('RestaurantSyncProcessor', () => {
     );
     expect(eventEmitter.emit).toHaveBeenCalledWith('restaurant-sync.failed', {
       restaurantId: 12,
+      cycleStartedAt: '2026-09-29T06:00:00.000Z',
       attempts: RESTAURANT_SYNC_ATTEMPTS,
       errorMessage: 'SimCompanies unavailable',
     });
