@@ -13,6 +13,7 @@ import {
   PaginatedResult,
   RestaurantListItem,
   RestaurantProfitSummary,
+  RestaurantPortfolioOverview,
   RestaurantRun,
 } from '@features/restaurant-insights/contracts/restaurant-insights.contract';
 import { RestaurantInsightsService } from '@features/restaurant-insights/services/restaurant-insights.service';
@@ -58,11 +59,9 @@ export class TelegramBotService implements OnModuleInit, OnApplicationShutdown {
 
   async handleRestaurants(ctx: Context, requestedPage = 0): Promise<void> {
     if (!(await this.ensureAllowed(ctx))) return;
-    const restaurants = await this.restaurantInsightsService.listRestaurants({
-      page: requestedPage + 1,
-      limit: RESTAURANTS_PER_PAGE,
-    });
-    await this.replyRestaurantList(ctx, restaurants, requestedPage);
+    const [restaurants, portfolio] =
+      await this.getRestaurantListPage(requestedPage);
+    await this.replyRestaurantList(ctx, restaurants, portfolio, requestedPage);
   }
 
   async handleCallback(ctx: Context): Promise<void> {
@@ -78,12 +77,9 @@ export class TelegramBotService implements OnModuleInit, OnApplicationShutdown {
         await ctx.answerCbQuery('Página inválida');
         return;
       }
-      const restaurants = await this.restaurantInsightsService.listRestaurants({
-        page: page + 1,
-        limit: RESTAURANTS_PER_PAGE,
-      });
+      const [restaurants, portfolio] = await this.getRestaurantListPage(page);
       await ctx.answerCbQuery();
-      await this.editRestaurantList(ctx, restaurants, page);
+      await this.editRestaurantList(ctx, restaurants, portfolio, page);
       return;
     }
 
@@ -207,39 +203,60 @@ export class TelegramBotService implements OnModuleInit, OnApplicationShutdown {
   private async replyRestaurantList(
     ctx: Context,
     restaurants: PaginatedResult<RestaurantListItem>,
+    portfolio: RestaurantPortfolioOverview,
     requestedPage: number,
   ): Promise<void> {
+    const keyboard = restaurantListKeyboard(
+      restaurants.data,
+      requestedPage,
+      restaurants.totalPages,
+    );
     await ctx.reply(
-      restaurantListText(
+      formatRestaurantList(
         restaurants.total,
         requestedPage,
         restaurants.totalPages,
+        portfolio.profits,
       ),
-      restaurantListKeyboard(
-        restaurants.data,
-        requestedPage,
-        restaurants.totalPages,
-      ),
+      restaurantListOptions(keyboard),
     );
   }
 
   private async editRestaurantList(
     ctx: Context,
     restaurants: PaginatedResult<RestaurantListItem>,
+    portfolio: RestaurantPortfolioOverview,
     requestedPage: number,
   ): Promise<void> {
+    const keyboard = restaurantListKeyboard(
+      restaurants.data,
+      requestedPage,
+      restaurants.totalPages,
+    );
     await ctx.editMessageText(
-      restaurantListText(
+      formatRestaurantList(
         restaurants.total,
         requestedPage,
         restaurants.totalPages,
+        portfolio.profits,
       ),
-      restaurantListKeyboard(
-        restaurants.data,
-        requestedPage,
-        restaurants.totalPages,
-      ),
+      restaurantListOptions(keyboard),
     );
+  }
+
+  private getRestaurantListPage(
+    page: number,
+  ): Promise<
+    [PaginatedResult<RestaurantListItem>, RestaurantPortfolioOverview]
+  > {
+    const now = new Date();
+    return Promise.all([
+      this.restaurantInsightsService.listRestaurants({
+        page: page + 1,
+        limit: RESTAURANTS_PER_PAGE,
+      }),
+      this.restaurantInsightsService.getRestaurantPortfolioOverview(now),
+    ]);
   }
 }
 
@@ -295,13 +312,25 @@ function formatRestaurantStatistic(stat: RestaurantRun): string {
   ].join('\n');
 }
 
-function restaurantListText(
+function formatRestaurantList(
   total: number,
   page: number,
   totalPages: number,
+  profits: RestaurantProfitSummary,
 ): string {
-  if (!total) return 'No hay restaurantes sincronizados todavía.';
-  return `Elige un restaurante (página ${page + 1} de ${totalPages}).`;
+  const listText = total
+    ? `Elige un restaurante (página ${page + 1} de ${totalPages}).`
+    : 'No hay restaurantes sincronizados todavía.';
+  return [
+    '🍽️ <b>Ganancias generales</b> 🍽️',
+    '━━━━━━━━━━━━━━━━━━',
+    `⏱️ <b>Últimas 24 hrs:</b> $${formatNumber(profits.last24Hours)}`,
+    `🕒 <b>Últimas 72 hrs:</b> $${formatNumber(profits.last72Hours)}`,
+    `📅 <b>Últimos 7 días:</b> $${formatNumber(profits.last7Days)}`,
+    '━━━━━━━━━━━━━━━━━━',
+    '',
+    listText,
+  ].join('\n');
 }
 
 function restaurantListKeyboard(
@@ -333,6 +362,14 @@ function restaurantListKeyboard(
     );
   if (navigation.length) buttons.push(navigation);
   return Markup.inlineKeyboard(buttons);
+}
+
+function restaurantListOptions(
+  keyboard: ReturnType<typeof restaurantListKeyboard>,
+) {
+  return keyboard
+    ? { parse_mode: 'HTML' as const, reply_markup: keyboard.reply_markup }
+    : { parse_mode: 'HTML' as const };
 }
 
 function restaurantMenuKeyboard(restaurantId: number) {
