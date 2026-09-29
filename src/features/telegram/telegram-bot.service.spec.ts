@@ -89,8 +89,9 @@ describe('TelegramBotService', () => {
       restaurantInsightsService.getRestaurantRunHistory,
     ).not.toHaveBeenCalled();
     expect(ctx.editMessageText).toHaveBeenCalledWith(
-      expect.stringContaining('💵 Ganancia últimas 24 h: 350'),
+      expect.stringContaining('⏱️ <b>Últimas 24 hrs:</b> $350'),
       expect.objectContaining({
+        parse_mode: 'HTML',
         reply_markup: expect.objectContaining({
           inline_keyboard: expect.arrayContaining([
             expect.arrayContaining([
@@ -181,6 +182,13 @@ describe('TelegramBotService', () => {
         last7Days: 0,
       }),
     ).toContain('Restaurante No.5');
+    expect(
+      formatRestaurantMenu('Restaurante No.5', {
+        last24Hours: 10,
+        last72Hours: 20,
+        last7Days: 30,
+      }),
+    ).toContain('⏱️ <b>Últimas 24 hrs:</b> $10');
     expect(formatRestaurantStatistics('Restaurante No.5', [], 1, 0)).toContain(
       'Aún no hay estadísticas resueltas',
     );

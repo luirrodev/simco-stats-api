@@ -137,10 +137,11 @@ export class TelegramBotService implements OnModuleInit, OnApplicationShutdown {
           restaurantId,
           new Date(),
         );
+      const keyboard = restaurantMenuKeyboard(restaurantId);
       await ctx.answerCbQuery();
       await ctx.editMessageText(
         formatRestaurantMenu(overview.restaurant.name, overview.profits),
-        restaurantMenuKeyboard(restaurantId),
+        { parse_mode: 'HTML', reply_markup: keyboard.reply_markup },
       );
     }
   }
@@ -247,10 +248,12 @@ export function formatRestaurantMenu(
   profitSummary: RestaurantProfitSummary,
 ): string {
   return [
-    restaurantName,
-    `💵 Ganancia últimas 24 h: ${formatNumber(profitSummary.last24Hours)}`,
-    `💵 Ganancia últimas 72 h: ${formatNumber(profitSummary.last72Hours)}`,
-    `💵 Ganancia últimos 7 días: ${formatNumber(profitSummary.last7Days)}`,
+    `🍽️ <b>${escapeHtml(restaurantName)}</b> 🍽️`,
+    '━━━━━━━━━━━━━━━━━━',
+    `⏱️ <b>Últimas 24 hrs:</b> $${formatNumber(profitSummary.last24Hours)}`,
+    `🕒 <b>Últimas 72 hrs:</b> $${formatNumber(profitSummary.last72Hours)}`,
+    `📅 <b>Últimos 7 días:</b> $${formatNumber(profitSummary.last7Days)}`,
+    '━━━━━━━━━━━━━━━━━━',
   ].join('\n');
 }
 
@@ -434,6 +437,19 @@ function formatNumber(value: number): string {
   return new Intl.NumberFormat('es-ES', {
     maximumFractionDigits: 2,
   }).format(value);
+}
+
+function escapeHtml(value: string): string {
+  return value.replace(/[&<>"']/g, (character) => {
+    const entities: Record<string, string> = {
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;',
+    };
+    return entities[character];
+  });
 }
 
 function formatSignedNumber(value: number): string {
