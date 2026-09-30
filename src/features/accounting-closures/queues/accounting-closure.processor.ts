@@ -5,6 +5,8 @@ import type bull from 'bull';
 
 import {
   ACCOUNTING_CLOSURE_COMPLETED_EVENT,
+  ACCOUNTING_CLOSURE_CORRECTED_EVENT,
+  ACCOUNTING_CLOSURE_CORRECTION_JOB,
   ACCOUNTING_CLOSURE_JOB,
   ACCOUNTING_CLOSURE_QUEUE,
 } from '../accounting-closure.constants';
@@ -40,6 +42,27 @@ export class AccountingClosureProcessor {
         excludedRestaurantCount: closure.excludedRestaurantCount,
       });
     }
+  }
+
+  @Process({ name: ACCOUNTING_CLOSURE_CORRECTION_JOB, concurrency: 1 })
+  async processCorrection(job: bull.Job<AccountingClosureJobData>): Promise<void> {
+    if (!job.data.closureId) return;
+    const result = await this.closureService.correctClosure(job.data.closureId);
+    if (!result) return;
+    const closure = result.closure;
+    this.eventEmitter.emit(ACCOUNTING_CLOSURE_CORRECTED_EVENT, {
+      closureId: closure.id,
+      periodStart: closure.periodStart,
+      periodEnd: closure.periodEnd,
+      operatingRestaurantCount: closure.operatingRestaurantCount,
+      operatingLevelCount: closure.operatingLevelCount,
+      totalProfit: closure.totalProfit,
+      pphl: closure.pphl,
+      excludedRestaurantCount: closure.excludedRestaurantCount,
+      addedRunCount: result.addedRunCount,
+      profitDelta: result.profitDelta,
+      pphlDelta: result.pphlDelta,
+    });
   }
 
   private getPeriodEnd(job: bull.Job<AccountingClosureJobData>): Date {

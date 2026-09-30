@@ -66,4 +66,29 @@ describe('AccountingClosureProcessor', () => {
       expect.objectContaining({ end: new Date('2026-10-01T04:00:00.000Z') }),
     );
   });
+
+  it('emits a correction only when late cycles changed a closure', async () => {
+    closureService.correctClosure = jest.fn().mockResolvedValue({
+      closure: {
+        id: 7,
+        periodStart: new Date('2026-10-01T04:00:00.000Z'),
+        periodEnd: new Date('2026-10-01T16:00:00.000Z'),
+        operatingRestaurantCount: 2,
+        operatingLevelCount: 30,
+        totalProfit: 1200,
+        pphl: 3.33,
+        excludedRestaurantCount: 1,
+      },
+      addedRunCount: 2,
+      profitDelta: 120,
+      pphlDelta: 0.33,
+    });
+
+    await processor.processCorrection({ data: { closureId: 7 } } as never);
+
+    expect(eventEmitter.emit).toHaveBeenCalledWith(
+      'accounting-closure.corrected',
+      expect.objectContaining({ closureId: 7, addedRunCount: 2, profitDelta: 120 }),
+    );
+  });
 });
