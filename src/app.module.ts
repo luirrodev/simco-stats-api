@@ -25,6 +25,7 @@ import { SimCompaniesAuthModule } from '@features/auth/auth.module';
 import { BuildingModule } from '@features/building/building.module';
 import { RestaurantStatsModule } from '@features/restaurant-stats/restaurant-stats.module';
 import { TelegramModule } from '@features/telegram/telegram.module';
+import { AccountingClosuresModule } from '@features/accounting-closures/accounting-closures.module';
 
 // Modulos Features
 
@@ -58,6 +59,7 @@ import { TelegramModule } from '@features/telegram/telegram.module';
     SimCompaniesAuthModule,
     BuildingModule,
     RestaurantStatsModule,
+    AccountingClosuresModule,
     TelegramModule,
   ],
   controllers: [],
