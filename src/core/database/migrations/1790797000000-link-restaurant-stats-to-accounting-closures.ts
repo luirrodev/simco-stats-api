@@ -1,8 +1,6 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class LinkRestaurantStatsToAccountingClosures1790797000000
-  implements MigrationInterface
-{
+export class LinkRestaurantStatsToAccountingClosures1790797000000 implements MigrationInterface {
   name = 'LinkRestaurantStatsToAccountingClosures1790797000000';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
