@@ -30,9 +30,13 @@ import type {
 } from '@features/restaurant-stats/queues/restaurant-sync.constants';
 import {
   ACCOUNTING_CLOSURE_COMPLETED_EVENT,
+  ACCOUNTING_CLOSURE_CORRECTED_EVENT,
   ACCOUNTING_CLOSURE_TIMEZONE,
 } from '@features/accounting-closures/accounting-closure.constants';
-import type { AccountingClosureCompletedEvent } from '@features/accounting-closures/accounting-closure.constants';
+import type {
+  AccountingClosureCompletedEvent,
+  AccountingClosureCorrectedEvent,
+} from '@features/accounting-closures/accounting-closure.constants';
 import {
   TELEGRAM_NOTIFICATION_JOB,
   TELEGRAM_NOTIFICATION_MAX_ATTEMPTS,
@@ -245,6 +249,25 @@ export class TelegramBotService implements OnModuleInit, OnApplicationShutdown {
     } catch (error) {
       this.logNotificationError(
         `Unable to send accounting closure notification for ${closure.closureId}`,
+        error,
+      );
+    }
+  }
+
+  @OnEvent(ACCOUNTING_CLOSURE_CORRECTED_EVENT)
+  async handleAccountingClosureCorrected(
+    closure: AccountingClosureCorrectedEvent,
+  ): Promise<void> {
+    if (!this.appConfig.telegram.enabled || !this.bot) return;
+
+    try {
+      await this.enqueueForAllowedUsers(
+        formatAccountingClosureCorrectionNotification(closure),
+        `accounting-closure-correction-${closure.closureId}-${closure.periodEnd.getTime()}`,
+      );
+    } catch (error) {
+      this.logNotificationError(
+        `Unable to send accounting closure correction for ${closure.closureId}`,
         error,
       );
     }
@@ -482,6 +505,20 @@ export function formatAccountingClosureNotification(
     `💵 <b>Profit total:</b> $${formatNumber(closure.totalProfit)}`,
     `⏱️ <b>PPHL:</b> $${formatNumber(closure.pphl)}`,
     `⚠️ <b>Sin ciclo disponible:</b> ${formatNumber(closure.excludedRestaurantCount)}`,
+  ].join('\n');
+}
+
+export function formatAccountingClosureCorrectionNotification(
+  closure: AccountingClosureCorrectedEvent,
+): string {
+  return [
+    '📝 <b>Cierre contable corregido</b>',
+    '',
+    `📅 <b>Período:</b> ${formatAccountingPeriod(closure.periodStart, closure.periodEnd)}`,
+    `➕ <b>Ciclos añadidos:</b> ${formatNumber(closure.addedRunCount)}`,
+    '━━━━━━━━━━━━━━━━━━',
+    `💵 <b>Profit total:</b> $${formatNumber(closure.totalProfit)} (${formatSignedNumber(closure.profitDelta)})`,
+    `⏱️ <b>PPHL:</b> $${formatNumber(closure.pphl)} (${formatSignedNumber(closure.pphlDelta)})`,
   ].join('\n');
 }
 

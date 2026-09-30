@@ -3,6 +3,7 @@ import type { Context } from 'telegraf';
 import {
   formatRestaurantMenu,
   formatAccountingClosureNotification,
+  formatAccountingClosureCorrectionNotification,
   formatRestaurantSyncCompletedNotification,
   formatRestaurantSyncFailedNotification,
   formatRestaurantStatistics,
@@ -49,6 +50,26 @@ describe('TelegramBotService', () => {
     expect(message).toContain('Restaurantes operativos:</b> 12');
     expect(message).toContain('PPHL:</b> $57,16');
     expect(message).toContain('Sin ciclo disponible:</b> 3');
+  });
+
+  it('formats a consolidated accounting correction notification', () => {
+    const message = formatAccountingClosureCorrectionNotification({
+      closureId: 1,
+      periodStart: new Date('2026-10-01T04:00:00.000Z'),
+      periodEnd: new Date('2026-10-01T16:00:00.000Z'),
+      operatingRestaurantCount: 12,
+      operatingLevelCount: 180,
+      totalProfit: 123456.78,
+      pphl: 57.16,
+      excludedRestaurantCount: 0,
+      addedRunCount: 2,
+      profitDelta: 900,
+      pphlDelta: 0.42,
+    });
+
+    expect(message).toContain('Cierre contable corregido');
+    expect(message).toContain('Ciclos añadidos:</b> 2');
+    expect(message).toContain('(+900)');
   });
 
   it('does not query insights for an unauthorized user', async () => {
