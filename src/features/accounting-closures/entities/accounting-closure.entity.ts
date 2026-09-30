@@ -8,7 +8,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 
-import { RestaurantStatEntity } from '@features/restaurant-stats/entities/restaurant-stat.entity';
+import { RestaurantStatEntity } from '../../restaurant-stats/entities/restaurant-stat.entity';
 
 const numericTransformer = {
   to: (value: number): number => value,
