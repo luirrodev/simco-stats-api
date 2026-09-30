@@ -29,6 +29,11 @@ import type {
   RestaurantSyncFailedEvent,
 } from '@features/restaurant-stats/queues/restaurant-sync.constants';
 import {
+  ACCOUNTING_CLOSURE_COMPLETED_EVENT,
+  ACCOUNTING_CLOSURE_TIMEZONE,
+} from '@features/accounting-closures/accounting-closure.constants';
+import type { AccountingClosureCompletedEvent } from '@features/accounting-closures/accounting-closure.constants';
+import {
   TELEGRAM_NOTIFICATION_JOB,
   TELEGRAM_NOTIFICATION_MAX_ATTEMPTS,
   TELEGRAM_NOTIFICATION_QUEUE,
@@ -221,6 +226,25 @@ export class TelegramBotService implements OnModuleInit, OnApplicationShutdown {
     } catch (error) {
       this.logNotificationError(
         `Unable to send failed synchronization notification for restaurant ${event.restaurantId}`,
+        error,
+      );
+    }
+  }
+
+  @OnEvent(ACCOUNTING_CLOSURE_COMPLETED_EVENT)
+  async handleAccountingClosureCompleted(
+    closure: AccountingClosureCompletedEvent,
+  ): Promise<void> {
+    if (!this.appConfig.telegram.enabled || !this.bot) return;
+
+    try {
+      await this.enqueueForAllowedUsers(
+        formatAccountingClosureNotification(closure),
+        `accounting-closure-${closure.periodEnd.getTime()}`,
+      );
+    } catch (error) {
+      this.logNotificationError(
+        `Unable to send accounting closure notification for ${closure.closureId}`,
         error,
       );
     }
@@ -445,6 +469,22 @@ export function formatRestaurantSyncFailedNotification(
   ].join('\n');
 }
 
+export function formatAccountingClosureNotification(
+  closure: AccountingClosureCompletedEvent,
+): string {
+  return [
+    '📒 <b>Cierre contable de restaurantes</b>',
+    '',
+    `📅 <b>Período:</b> ${formatAccountingPeriod(closure.periodStart, closure.periodEnd)}`,
+    '━━━━━━━━━━━━━━━━━━',
+    `🍽️ <b>Restaurantes operativos:</b> ${formatNumber(closure.operatingRestaurantCount)}`,
+    `🏢 <b>Niveles operativos:</b> ${formatNumber(closure.operatingLevelCount)}`,
+    `💵 <b>Profit total:</b> $${formatNumber(closure.totalProfit)}`,
+    `⏱️ <b>PPHL:</b> $${formatNumber(closure.pphl)}`,
+    `⚠️ <b>Sin ciclo disponible:</b> ${formatNumber(closure.excludedRestaurantCount)}`,
+  ].join('\n');
+}
+
 function formatRestaurantStatistic(stat: RestaurantRun): string {
   const ratingChange =
     stat.newRating === null
@@ -463,6 +503,15 @@ function formatRestaurantStatistic(stat: RestaurantRun): string {
     `🍽️ Precio de menú: ${formatNumber(stat.menuPrice)}`,
     '━━━━━━━━━━━━━━━━━━',
   ].join('\n');
+}
+
+function formatAccountingPeriod(start: Date, end: Date): string {
+  const formatter = new Intl.DateTimeFormat('es-CU', {
+    timeZone: ACCOUNTING_CLOSURE_TIMEZONE,
+    dateStyle: 'short',
+    timeStyle: 'short',
+  });
+  return `${formatter.format(start)} — ${formatter.format(end)}`;
 }
 
 function formatRestaurantList(

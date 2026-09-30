@@ -3,8 +3,12 @@ import {
   CreateDateColumn,
   Entity,
   Index,
+  OneToMany,
   PrimaryGeneratedColumn,
+  UpdateDateColumn,
 } from 'typeorm';
+
+import { RestaurantStatEntity } from '@features/restaurant-stats/entities/restaurant-stat.entity';
 
 const numericTransformer = {
   to: (value: number): number => value,
@@ -25,6 +29,12 @@ export class AccountingClosureEntity {
 
   @CreateDateColumn({ name: 'executed_at', type: 'timestamptz' })
   executedAt!: Date;
+
+  @UpdateDateColumn({ name: 'updated_at', type: 'timestamptz' })
+  updatedAt!: Date;
+
+  @OneToMany(() => RestaurantStatEntity, (stat) => stat.accountingClosure)
+  restaurantStats!: RestaurantStatEntity[];
 
   @Column({ name: 'operating_restaurant_count', type: 'int' })
   operatingRestaurantCount!: number;

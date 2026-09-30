@@ -10,6 +10,7 @@ import {
 } from 'typeorm';
 
 import { BuildingEntity } from '../../building/entities/building.entity';
+import { AccountingClosureEntity } from '../../accounting-closures/entities/accounting-closure.entity';
 
 const numericTransformer = {
   to: (value: number | null): number | null => value,
@@ -33,6 +34,14 @@ export class RestaurantStatEntity {
   @ManyToOne(() => BuildingEntity, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'building_id' })
   building!: BuildingEntity | null;
+
+  @ManyToOne(
+    () => AccountingClosureEntity,
+    (closure) => closure.restaurantStats,
+    { nullable: true, onDelete: 'SET NULL' },
+  )
+  @JoinColumn({ name: 'accounting_closure_id' })
+  accountingClosure!: AccountingClosureEntity | null;
 
   @Column({ type: 'timestamptz' })
   datetime!: Date;
